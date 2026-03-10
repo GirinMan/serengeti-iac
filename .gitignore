@@ -143,6 +143,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+docs/perplexity/.env
+docs/perplexity/__pycache__/
 
 # Spyder project settings
 .spyderproject

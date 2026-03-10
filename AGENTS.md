@@ -65,7 +65,7 @@ External Network (Internet)
 - **도메인**: `<public_domain>`
 - **네임서버**: Cloudflare로 위임
 - **서브도메인 라우팅**:
-  - `<blog_subdomain>` → Ghost 블로그
+  - `<content_subdomain>` → Directus 콘텐츠 관리/API
   - `<nas_subdomain>` → Nextcloud
   - `<api_subdomain>` → Custom API
   - `<ssh_subdomain>` → SSH 접속용 (Cloudflare Access)
@@ -143,7 +143,7 @@ External Network (Internet)
 - Minio (S3-compatible Object Storage)
 
 ### Layer 3: Application
-- Ghost (블로그)
+- Directus (콘텐츠 관리/API)
 - Nextcloud (NAS)
 - Custom API 서비스
 - Backup Pipeline (Cron + BorgBackup)
@@ -153,7 +153,7 @@ External Network (Internet)
 ```
 proxy-tier (bridge):
   - NPM (<npm_http_port>, <npm_https_port> 포트 호스트에 노출)
-  - Ghost, Nextcloud, Custom API (포트 비노출, 컨테이너명으로 NPM에 연결)
+  - Directus, Nextcloud, Custom API (포트 비노출, 컨테이너명으로 NPM에 연결)
 
 data-tier (bridge):
   - PostgreSQL, Neo4j, Elasticsearch, Redis, Kafka, Minio
@@ -208,9 +208,9 @@ data-tier (bridge):
     │       └── docker-compose.yml
     │
     └── layer3-apps/                  # Layer 3: Application
-        ├── nextcloud/
+        ├── content/
         │   └── docker-compose.yml
-        ├── blog/
+        ├── nextcloud/
         │   └── docker-compose.yml
         └── backup/
             ├── docker-compose.yml
@@ -910,33 +910,43 @@ networks:
 
 ## 9. Layer 3: Application
 
-### 9.1 `docker/layer3-apps/blog/docker-compose.yml` (Ghost)
+### 9.1 `docker/layer3-apps/content/docker-compose.yml` (Directus)
 
 ```yaml
 services:
-  ghost:
-    image: ghost:5-alpine
-    container_name: ghost-blog
+  directus:
+    image: directus/directus:${DIRECTUS_VERSION}
+    container_name: content-api
     restart: unless-stopped
     environment:
-      url: https://<blog_subdomain>
-      database__client: postgres
-      database__connection__host: postgres
-      database__connection__user: ${POSTGRES_USER}
-      database__connection__password: ${POSTGRES_PASSWORD}
-      database__connection__database: ghost_blog
+      PUBLIC_URL: ${DIRECTUS_PUBLIC_URL}
+      PORT: ${DIRECTUS_PORT}
+      DB_CLIENT: pg
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DIRECTUS_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD}
+      KEY: ${DIRECTUS_KEY}
+      SECRET: ${DIRECTUS_SECRET}
+      WEBSOCKETS_ENABLED: "true"
+      CACHE_ENABLED: "true"
+      CACHE_AUTO_PURGE: "true"
+      CACHE_STORE: redis
+      REDIS: redis://:${REDIS_PASSWORD}@redis:6379
     volumes:
-      - ./content:/var/lib/ghost/content
+      - ./extensions:/directus/extensions
+      - /mnt/archive/directus/uploads:/directus/uploads
     networks:
       - proxy-tier
       - data-tier
-    depends_on:
-      - postgres
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:<ghost_port>"]
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:' + process.env.PORT + '/server/health').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
 
 networks:
   proxy-tier:
@@ -946,13 +956,13 @@ networks:
 ```
 
 **NPM 프록시 설정**:
-- Domain: `<blog_subdomain>`
-- Forward to: `ghost-blog:<ghost_port>`
+- Domain: `<content_subdomain>`
+- Forward to: `content-api:<directus_port>`
 - SSL: Let's Encrypt 자동 발급
 
 **DB 초기화**:
 ```bash
-docker exec -it postgres psql -U postgres -c "CREATE DATABASE ghost_blog;"
+docker exec -it postgres psql -U postgres -c "CREATE DATABASE directus;"
 ```
 
 ### 9.2 `docker/layer3-apps/nextcloud/docker-compose.yml`
@@ -1252,7 +1262,7 @@ data: network
 # Layer 3: Application
 apps: network
 	@echo "==> [Layer 3] 애플리케이션 실행"
-	docker compose -f docker/layer3-apps/blog/docker-compose.yml --env-file .env up -d
+	docker compose -f docker/layer3-apps/content/docker-compose.yml --env-file .env up -d
 	docker compose -f docker/layer3-apps/nextcloud/docker-compose.yml --env-file .env up -d
 
 backup: network
@@ -1284,7 +1294,7 @@ clean:
 	@echo "==> 모든 컨테이너 중단"
 	docker compose -f docker/layer3-apps/backup/docker-compose.yml down
 	docker compose -f docker/layer3-apps/nextcloud/docker-compose.yml down
-	docker compose -f docker/layer3-apps/blog/docker-compose.yml down
+	docker compose -f docker/layer3-apps/content/docker-compose.yml down
 	docker compose -f docker/layer2-data/minio/docker-compose.yml down
 	docker compose -f docker/layer2-data/kafka/docker-compose.yml down
 	docker compose -f docker/layer2-data/redis/docker-compose.yml down
@@ -1339,7 +1349,7 @@ make ops
 make data
 
 # 11. DB 초기화
-docker exec -it postgres psql -U postgres -c "CREATE DATABASE ghost_blog;"
+docker exec -it postgres psql -U postgres -c "CREATE DATABASE directus;"
 docker exec -it postgres psql -U postgres -c "CREATE DATABASE nextcloud;"
 
 # 12. Layer 3: 애플리케이션
@@ -1356,23 +1366,23 @@ make status
 
 특정 앱만 재시작:
 ```bash
-# 블로그 재배포
-docker compose -f docker/layer3-apps/blog/docker-compose.yml down
-docker compose -f docker/layer3-apps/blog/docker-compose.yml --env-file .env up -d
+# 콘텐츠 서비스 재배포
+docker compose -f docker/layer3-apps/content/docker-compose.yml down
+docker compose -f docker/layer3-apps/content/docker-compose.yml --env-file .env up -d
 
 # 또는 Makefile에 추가
-make app name=blog
+make app name=content
 ```
 
 ### 12.3 NPM 프록시 호스트 설정
 
 1. NPM Admin UI 접속: `http://<server_private_ip>:<npm_admin_port>`
 2. Proxy Hosts → Add Proxy Host
-3. 예시 (Ghost 블로그):
-   - **Domain Names**: `<blog_subdomain>`
+3. 예시 (Directus 콘텐츠 플랫폼):
+   - **Domain Names**: `<content_subdomain>`
    - **Scheme**: `http`
-   - **Forward Hostname / IP**: `ghost-blog`
-   - **Forward Port**: `<ghost_port>`
+   - **Forward Hostname / IP**: `content-api`
+   - **Forward Port**: `<directus_port>`
    - **Cache Assets**: ✓
    - **Block Common Exploits**: ✓
    - **Websockets Support**: ✓
