@@ -85,13 +85,6 @@ Proxy Host를 아래처럼 등록한다.
 
 Cloudflare Tunnel과 공인 도메인 연결 전까지는 SSL 발급을 강제하지 않는다. 먼저 NPM 내부 라우팅과 upstream 응답만 검증한다.
 
-선택형 콘텐츠 API가 필요하면 아래 항목도 추가한다.
-
-- Domain: `${CF_CONTENT_HOST}`
-- Scheme: `http`
-- Forward Hostname / IP: `content-api`
-- Forward Port: `${DIRECTUS_PORT}`
-
 ## 5. Blog Validation
 
 현재 `docker/layer3-apps/blog/docker-compose.yml` 은 `wordpress-blog:80` 을 `proxy-tier` 와 `data-tier` 에 붙인다.
@@ -117,21 +110,7 @@ docker exec plane-proxy curl -fsS http://127.0.0.1/
 
 Plane 업로드를 쓰려면 `Minio` 쪽 버킷 `${PLANE_AWS_BUCKET_NAME}` 도 미리 만들어 둔다.
 
-## 7. Optional Content API Validation
-
-`Directus` 를 선택형 콘텐츠 API로 올릴 때만 수행한다.
-
-```bash
-docker exec -i postgres psql -U "${POSTGRES_USER}" -d postgres -tc \
-  "SELECT 1 FROM pg_database WHERE datname='${DIRECTUS_DB}'" | grep -q 1 || \
-docker exec -i postgres psql -U "${POSTGRES_USER}" -d postgres -c \
-  "CREATE DATABASE ${DIRECTUS_DB};"
-docker compose --env-file .env -f docker/layer3-apps/content/docker-compose.yml up -d
-docker logs --tail 50 content-api
-docker exec content-api wget -qO- "http://127.0.0.1:${DIRECTUS_PORT}/server/health"
-```
-
-## 8. Nextcloud Validation
+## 7. Nextcloud Validation
 
 현재 `docker/layer3-apps/nextcloud/docker-compose.yml`은 내부 HTTP `80` 포트를 사용한다.
 
@@ -142,7 +121,7 @@ docker exec nextcloud curl -fsS http://127.0.0.1/status.php
 docker exec nextcloud php occ status
 ```
 
-## 9. Minio Validation
+## 8. Minio Validation
 
 현재 `docker/layer2-data/minio/docker-compose.yml`은 API 포트 `${MINIO_API_PORT}`, Console 포트 `${MINIO_CONSOLE_PORT}`를 컨테이너 내부에서 사용한다.
 
@@ -153,7 +132,7 @@ docker exec minio curl -fsS "http://127.0.0.1:${MINIO_API_PORT}/minio/health/liv
 docker exec minio curl -I "http://127.0.0.1:${MINIO_CONSOLE_PORT}"
 ```
 
-## 10. Kafka Validation
+## 9. Kafka Validation
 
 현재 `docker/layer2-data/kafka/docker-compose.yml`은 `apache/kafka:${KAFKA_VERSION}`와 내부 broker 포트 `${KAFKA_BROKER_PORT}`를 사용한다.
 
@@ -167,7 +146,7 @@ docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server "127.0.0.1:$
 docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server "127.0.0.1:${KAFKA_BROKER_PORT}" --describe --topic bootstrap-check
 ```
 
-## 11. Recommended Order
+## 10. Recommended Order
 
 ```bash
 make ops
@@ -182,8 +161,7 @@ make backup
 2. MariaDB 초기화 상태 확인
 3. NPM Proxy Host 등록
 4. `WordPress`, `Plane`, `Nextcloud`, `Minio`, `Kafka` 개별 검증
-5. 선택형이면 `Directus` 를 추가
-6. Backup 파이프라인을 `--build`로 재기동 후 수동 덤프 검증
+5. Backup 파이프라인을 `--build`로 재기동 후 수동 덤프 검증
 
 ```bash
 docker compose --env-file .env -f docker/layer3-apps/backup/docker-compose.yml build --no-cache

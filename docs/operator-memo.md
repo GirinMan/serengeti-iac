@@ -33,7 +33,6 @@
 
 - 기본 블로그는 `WordPress` 다.
 - `Plane` 은 task 관리용 애플리케이션으로 추가됐다.
-- `Directus` 는 기본 앱이 아니라 선택형 콘텐츠 API 후보로만 유지한다.
 - 승인되지 않은 서비스 전용 DB 추가는 피했고, 실제 필요한 것만 인프라 레이어에 올렸다.
   - `WordPress` 용 `MariaDB`
   - `Plane` 용 `RabbitMQ`

@@ -57,8 +57,7 @@
 
 - 현재 호스트는 실제 홈랩 서버 본체이며 Layer 0 기초 설정이 대부분 적용됐다.
 - Docker 기반 Layer 1~2 서비스는 정상 기동했고, Layer 3에서는 `Nextcloud`, `WordPress` 가 정상 기동 중이다.
-- 블로그 플랫폼은 `Ghost` 나 `Directus` 가 아니라 `WordPress` 로 재설계됐다.
-- `Directus` 는 기본 앱 경로에서 제외하고 선택형 콘텐츠 API 후보로만 남겼다.
+- 블로그 플랫폼은 `WordPress` 로 재설계됐다.
 - `Plane` 도입을 위해 기존 `PostgreSQL`, `Redis`, `Minio` 를 재사용하고 `RabbitMQ` 를 추가했다.
 - `/home/girinman/Downloads/onedrive` 보호 원칙은 유지 중이며 작업 과정에서 건드리지 않았다.
 
