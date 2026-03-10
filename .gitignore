@@ -203,6 +203,7 @@ cython_debug/
 *.pem
 *.key
 system/authorized_keys
+inventory/raw/
 docker/layer1-ops/npm/data/
 docker/layer1-ops/npm/letsencrypt/
 docker/layer2-data/*/data/

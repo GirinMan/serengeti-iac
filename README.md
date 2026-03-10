@@ -277,7 +277,7 @@ serengeti-iac/
 - 백업/복구 실제 테스트
 - 서비스별 운영 문서 보강
 
-즉, 지금 이 저장소는 "문서만 있는 상태"는 아니지만, 아직 실운영 검증 전의 초기 구현 단계라고 보는 것이 맞습니다.
+즉, 지금 이 저장소는 "문서만 있는 상태"는 아니며, Layer별 실행 스크립트와 Compose 스택, 호스트 인벤토리 수집 스크립트까지 포함한 `초기 실행 가능 상태`입니다. 다만 실운영 서버에서의 순차 검증과 세부 튜닝은 계속 진행해야 합니다.
 
 ---
 
@@ -343,6 +343,10 @@ serengeti-iac/
 │   ├── init_ubuntu.sh
 │   ├── .zshrc
 │   └── .tmux.conf.local
+├── inventory/
+│   ├── README.md
+│   └── scripts/
+│       └── collect_host_state.sh
 └── docker/
     ├── networks.sh
     ├── layer1-ops/
@@ -355,7 +359,45 @@ serengeti-iac/
 - `system/`은 호스트 설정만 담당합니다.
 - `docker/`는 컨테이너 기반 서비스 정의만 담당합니다.
 - `user_cli/`는 운영자 개인 환경을 별도로 관리합니다.
+- `inventory/`는 현재 서버 상태를 수집하고, 마스킹 후 기록 문서를 남기기 위한 보조 영역입니다.
 - 문서와 스크립트의 책임 범위가 비교적 선명하게 나뉩니다.
+
+---
+
+## 기본 실행 흐름
+
+실제 서버에서는 아래 순서로 진행하는 것을 기본 경로로 잡습니다.
+
+```bash
+cp .env.example .env
+$EDITOR .env
+
+make validate
+make system
+make storage
+make ssh
+make ufw
+make cloudflared
+make bootstrap
+make docs-host
+```
+
+### 주요 타깃
+
+- `make validate`
+  - 쉘 스크립트 문법을 검사하고, Docker가 설치된 환경이면 compose 설정까지 확인합니다.
+- `make dirs`
+  - 로컬 bind mount 디렉토리와 인벤토리 출력 디렉토리를 만듭니다.
+- `make bootstrap`
+  - `ops -> data -> apps -> backup` 순서로 전체 Docker 스택을 기동합니다.
+- `make docs-host`
+  - 현재 호스트의 네트워크, 디스크, Docker, 주요 시스템 서비스 상태를 `inventory/raw/`에 수집합니다.
+
+### 인벤토리 운영 원칙
+
+- `inventory/raw/` 산출물은 Git에 올리지 않습니다.
+- IP, 디스크 식별자, 포트, 도메인 등은 마스킹한 뒤 별도 문서로 정리합니다.
+- 실서버 변경 전과 후 모두 수집해 diff 기준 기록으로 남깁니다.
 
 ---
 

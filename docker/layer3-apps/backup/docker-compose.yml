@@ -5,10 +5,13 @@ services:
     restart: unless-stopped
     entrypoint: ["crond", "-f", "-l", "2"]
     environment:
+      TZ: ${TIMEZONE}
       POSTGRES_HOST: postgres
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       NEO4J_CONTAINER: neo4j
+      NEO4J_VERSION: ${NEO4J_VERSION}
+      NEO4J_DATA_DIR: ${NEO4J_DATA_DIR}
       BORG_PASSPHRASE: ${BORG_PASSPHRASE}
       BORG_REPO: ${BORG_REPO}
     volumes:
@@ -19,6 +22,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - data-tier
+    depends_on:
+      postgres:
+        condition: service_started
+      neo4j:
+        condition: service_started
 
 networks:
   data-tier:

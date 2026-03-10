@@ -7,7 +7,8 @@ RUN apk add --no-cache \
     docker-cli \
     dcron \
     gzip \
-    postgresql-client
+    postgresql-client \
+    tzdata
 
 COPY scripts /scripts
 RUN chmod +x /scripts/*.sh

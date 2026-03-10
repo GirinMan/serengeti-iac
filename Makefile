@@ -3,7 +3,7 @@ export
 
 COMPOSE = docker compose --env-file .env
 
-.PHONY: help check-env system storage ssh ufw cloudflared network ops data apps backup app status logs clean
+.PHONY: help check-env validate system storage ssh ufw cloudflared network dirs ops data apps backup bootstrap app status logs docs-host clean
 
 help:
 	@echo "===== Serengeti Homelab IaC ====="
@@ -12,12 +12,16 @@ help:
 	@echo "make ssh         - SSH 설정 템플릿 적용"
 	@echo "make ufw         - UFW 방화벽 설정"
 	@echo "make cloudflared - Cloudflare Tunnel 설치"
+	@echo "make validate    - 주요 쉘 스크립트 문법 및 compose 설정 검증"
 	@echo "make network     - Docker 네트워크 생성"
+	@echo "make dirs        - 로컬 bind mount 디렉토리 생성"
 	@echo "make ops         - Layer 1 서비스 실행"
 	@echo "make data        - Layer 2 데이터 플랫폼 실행"
 	@echo "make apps        - Layer 3 애플리케이션 실행"
 	@echo "make backup      - 백업 파이프라인 실행"
+	@echo "make bootstrap   - Layer 1~3 전체 스택 순차 실행"
 	@echo "make app name=<blog|nextcloud> - 개별 앱 재배포"
+	@echo "make docs-host   - 현재 호스트 상태 수집 문서 생성"
 	@echo "make status      - 전체 상태 확인"
 	@echo "make logs name=<container> - 컨테이너 로그 확인"
 	@echo "make clean       - 전체 스택 중단"
@@ -27,6 +31,42 @@ check-env:
 		echo ".env 파일이 없습니다. cp .env.example .env 후 값을 채우세요."; \
 		exit 1; \
 	fi
+
+validate: check-env
+	@echo "==> 쉘 스크립트 문법 확인"
+	bash -n system/01_setup.sh
+	bash -n system/02_zfs_archive.sh
+	bash -n system/03_mount_primary.sh
+	bash -n system/ufw.sh
+	bash -n system/cloudflared_install.sh
+	bash -n docker/networks.sh
+	bash -n docker/layer3-apps/backup/scripts/dump_postgres.sh
+	bash -n docker/layer3-apps/backup/scripts/dump_neo4j.sh
+	bash -n docker/layer3-apps/backup/scripts/run_borg.sh
+	bash -n inventory/scripts/collect_host_state.sh
+	@if command -v docker >/dev/null 2>&1; then \
+		echo "==> Docker Compose 설정 확인"; \
+		$(COMPOSE) -f docker/layer1-ops/npm/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer2-data/postgres/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer2-data/neo4j/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer2-data/elasticsearch/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer2-data/redis/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer2-data/kafka/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer2-data/minio/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer3-apps/backup/docker-compose.yml config >/dev/null; \
+	else \
+		echo "==> Docker가 없어 Compose 검증은 건너뜁니다."; \
+	fi
+
+dirs:
+	@echo "==> 로컬 bind mount 디렉토리 생성"
+	mkdir -p docker/layer1-ops/npm/data
+	mkdir -p docker/layer1-ops/npm/letsencrypt
+	mkdir -p docker/layer3-apps/blog/content
+	mkdir -p docker/layer3-apps/nextcloud/html
+	mkdir -p inventory/raw
 
 system:
 	@echo "==> [Layer 0] 시스템 기초 설정"
@@ -58,7 +98,7 @@ network:
 	@echo "==> Docker 네트워크 생성"
 	bash docker/networks.sh
 
-ops: check-env network
+ops: check-env network dirs
 	@echo "==> [Layer 1] Nginx Proxy Manager 실행"
 	$(COMPOSE) -f docker/layer1-ops/npm/docker-compose.yml up -d
 
@@ -71,7 +111,7 @@ data: check-env network
 	$(COMPOSE) -f docker/layer2-data/kafka/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer2-data/minio/docker-compose.yml up -d
 
-apps: check-env network
+apps: check-env network dirs
 	@echo "==> [Layer 3] 애플리케이션 실행"
 	$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml up -d
@@ -79,6 +119,9 @@ apps: check-env network
 backup: check-env network
 	@echo "==> [Layer 3] 백업 파이프라인 실행"
 	$(COMPOSE) -f docker/layer3-apps/backup/docker-compose.yml up -d --build
+
+bootstrap: ops data apps backup
+	@echo "==> 전체 스택 기동 완료"
 
 app: check-env
 	@if [ -z "$(name)" ]; then \
@@ -110,6 +153,10 @@ logs:
 		exit 1; \
 	fi
 	docker logs -f $(name)
+
+docs-host:
+	@echo "==> 현재 호스트 상태 수집"
+	bash inventory/scripts/collect_host_state.sh
 
 clean:
 	@echo "==> 모든 컨테이너 중단"
