@@ -9,8 +9,9 @@ if [[ ! -f "${ENV_FILE}" ]]; then
   exit 1
 fi
 
-# shellcheck disable=SC1090
-source "${ENV_FILE}"
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/system/lib_env.sh"
+load_env_file "${ENV_FILE}"
 
 for required in LOCAL_GW LOCAL_SUBNET SSH_PORT; do
   if [[ -z "${!required:-}" || "${!required}" == *"<"* ]]; then

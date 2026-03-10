@@ -9,7 +9,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - /mnt/primary/postgres:/var/lib/postgresql/data
+      - ${PRIMARY_STORAGE_ROOT}/postgres:/var/lib/postgresql/data
     networks:
       - data-tier
     healthcheck:

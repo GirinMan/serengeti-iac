@@ -17,7 +17,7 @@ services:
       KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
       ALLOW_PLAINTEXT_LISTENER: "yes"
     volumes:
-      - /mnt/primary/kafka:/bitnami/kafka/data
+      - ${PRIMARY_STORAGE_ROOT}/kafka:/bitnami/kafka/data
     networks:
       - data-tier
     healthcheck:

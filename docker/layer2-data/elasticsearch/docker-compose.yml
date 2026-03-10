@@ -9,7 +9,7 @@ services:
       xpack.security.enabled: "true"
       ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
     volumes:
-      - /mnt/primary/elasticsearch:/usr/share/elasticsearch/data
+      - ${PRIMARY_STORAGE_ROOT}/elasticsearch:/usr/share/elasticsearch/data
     networks:
       - data-tier
     ulimits:

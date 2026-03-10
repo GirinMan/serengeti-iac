@@ -112,8 +112,8 @@ flowchart LR
 
 | 디스크 | 용량 | 역할 | 주요 데이터 |
 |---|---:|---|---|
-| SSD #1 | 500GB | OS Root | Ubuntu, Docker 엔진, 시스템 로그 |
-| SSD #2 | 1TB | Primary Storage | PostgreSQL, Neo4j, Elasticsearch, Kafka, Redis |
+| SSD #1 | 1TB | OS Root | Ubuntu, Docker 엔진, 시스템 로그 |
+| SSD #2 | 500GB | Primary Storage | PostgreSQL, Neo4j, Elasticsearch, Kafka, Redis |
 | HDD x2 | 8TB + 8TB | Archive Storage | Minio, Nextcloud, Borg 저장소, 장기 보관 데이터 |
 
 ### 스토리지 개념도
@@ -130,9 +130,11 @@ flowchart TD
 ### 왜 이렇게 나누는가
 
 - 운영체제와 애플리케이션 데이터의 장애 영역을 분리하기 쉽습니다.
-- 쓰기 부하가 큰 데이터는 1TB SSD에 몰아 성능과 내구성을 확보합니다.
+- 쓰기 부하가 큰 데이터는 500GB SSD 보조 저장소에 몰아 성능과 내구성을 확보합니다.
 - 장기 보관 데이터는 ZFS mirror 위에 둬서 스냅샷과 복구 안정성을 확보합니다.
 - NAS와 백업 저장소가 서비스 데이터와 독립적으로 관리됩니다.
+
+실제 호스트에서는 보조 SSD 마운트 포인트가 `/mnt/primary`가 아닐 수 있으므로, 저장소의 compose 파일과 스크립트는 `.env`의 `PRIMARY_STORAGE_ROOT`, `ARCHIVE_STORAGE_ROOT` 기준으로 동작하도록 맞춰두는 것을 권장합니다.
 
 ---
 

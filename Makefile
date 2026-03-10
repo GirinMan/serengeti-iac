@@ -2,8 +2,10 @@
 export
 
 COMPOSE = docker compose --env-file .env
+PRIMARY_STORAGE_ROOT ?= /mnt/primary
+ARCHIVE_STORAGE_ROOT ?= /mnt/archive
 
-.PHONY: help check-env validate system storage ssh ufw cloudflared network dirs ops data apps backup bootstrap app status logs docs-host clean
+.PHONY: help check-env validate preflight system storage ssh ufw cloudflared network dirs ops data apps backup bootstrap app status logs docs-host clean
 
 help:
 	@echo "===== Serengeti Homelab IaC ====="
@@ -13,6 +15,7 @@ help:
 	@echo "make ufw         - UFW 방화벽 설정"
 	@echo "make cloudflared - Cloudflare Tunnel 설치"
 	@echo "make validate    - 주요 쉘 스크립트 문법 및 compose 설정 검증"
+	@echo "make preflight   - 현재 호스트가 Layer 0 적용 가능한지 점검"
 	@echo "make network     - Docker 네트워크 생성"
 	@echo "make dirs        - 로컬 bind mount 디렉토리 생성"
 	@echo "make ops         - Layer 1 서비스 실행"
@@ -34,6 +37,8 @@ check-env:
 
 validate: check-env
 	@echo "==> 쉘 스크립트 문법 확인"
+	bash -n system/00_preflight.sh
+	bash -n system/lib_env.sh
 	bash -n system/01_setup.sh
 	bash -n system/02_zfs_archive.sh
 	bash -n system/03_mount_primary.sh
@@ -60,6 +65,10 @@ validate: check-env
 		echo "==> Docker가 없어 Compose 검증은 건너뜁니다."; \
 	fi
 
+preflight: check-env
+	@echo "==> Layer 0 사전 점검"
+	bash system/00_preflight.sh
+
 dirs:
 	@echo "==> 로컬 bind mount 디렉토리 생성"
 	mkdir -p docker/layer1-ops/npm/data
@@ -72,7 +81,7 @@ system:
 	@echo "==> [Layer 0] 시스템 기초 설정"
 	bash system/01_setup.sh
 
-storage: check-env
+storage: check-env preflight
 	@echo "==> [Layer 0] 스토리지 구성"
 	bash system/02_zfs_archive.sh
 	bash system/03_mount_primary.sh
@@ -145,7 +154,7 @@ status:
 	@docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 	@echo
 	@echo "=== Storage Usage ==="
-	@df -h /mnt/primary /mnt/archive 2>/dev/null || true
+	@df -h $(PRIMARY_STORAGE_ROOT) $(ARCHIVE_STORAGE_ROOT) 2>/dev/null || true
 
 logs:
 	@if [ -z "$(name)" ]; then \

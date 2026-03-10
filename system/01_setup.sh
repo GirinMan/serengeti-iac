@@ -5,8 +5,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${ROOT_DIR}/.env"
 
 if [[ -f "${ENV_FILE}" ]]; then
-  # shellcheck disable=SC1090
-  source "${ENV_FILE}"
+  # shellcheck disable=SC1091
+  source "${ROOT_DIR}/system/lib_env.sh"
+  load_env_file "${ENV_FILE}"
 fi
 
 TIMEZONE="${TIMEZONE:-Asia/Seoul}"

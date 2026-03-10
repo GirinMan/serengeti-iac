@@ -10,8 +10,8 @@ services:
       NEO4J_server_memory_heap_max__size: 1G
       NEO4J_server_memory_pagecache_size: 512m
     volumes:
-      - /mnt/primary/neo4j/data:/data
-      - /mnt/primary/neo4j/logs:/logs
+      - ${PRIMARY_STORAGE_ROOT}/neo4j/data:/data
+      - ${PRIMARY_STORAGE_ROOT}/neo4j/logs:/logs
     networks:
       - data-tier
     healthcheck:

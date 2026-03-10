@@ -16,7 +16,7 @@ services:
       OVERWRITEPROTOCOL: https
     volumes:
       - ./html:/var/www/html
-      - /mnt/archive/nextcloud:/var/www/html/data
+      - ${ARCHIVE_STORAGE_ROOT}/nextcloud:/var/www/html/data
     networks:
       - proxy-tier
       - data-tier

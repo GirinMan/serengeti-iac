@@ -9,8 +9,9 @@ if [[ ! -f "${ENV_FILE}" ]]; then
   exit 1
 fi
 
-# shellcheck disable=SC1090
-source "${ENV_FILE}"
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/system/lib_env.sh"
+load_env_file "${ENV_FILE}"
 
 require_value() {
   local name="$1"
@@ -23,6 +24,7 @@ require_value() {
 
 require_value "ZFS_DISK1" "${ZFS_DISK1:-}"
 require_value "ZFS_DISK2" "${ZFS_DISK2:-}"
+ARCHIVE_STORAGE_ROOT="${ARCHIVE_STORAGE_ROOT:-/mnt/archive}"
 
 echo "[Layer 0] ZFS Archive Storage 구성 시작"
 echo "대상 디스크:"
@@ -44,7 +46,7 @@ fi
 
 echo ">> ZFS 속성 설정"
 sudo zfs set compression=lz4 archive
-sudo zfs set mountpoint=/mnt/archive archive
+sudo zfs set mountpoint="${ARCHIVE_STORAGE_ROOT}" archive
 sudo zfs set com.sun:auto-snapshot=true archive
 sudo zfs set com.sun:auto-snapshot:frequent=false archive
 sudo zfs set com.sun:auto-snapshot:hourly=true archive
@@ -55,8 +57,8 @@ sudo zfs set com.sun:auto-snapshot:monthly=true archive
 echo ">> zfs-auto-snapshot 설치"
 sudo apt-get install -y zfs-auto-snapshot
 
-sudo mkdir -p /mnt/archive/{minio,nextcloud,borg-repo,backup}
-sudo chown -R "${USER}:${USER}" /mnt/archive
+sudo mkdir -p "${ARCHIVE_STORAGE_ROOT}"/{minio,nextcloud,borg-repo,backup}
+sudo chown -R "${USER}:${USER}" "${ARCHIVE_STORAGE_ROOT}"
 
 echo ">> ZFS 상태 확인"
 sudo zpool status archive

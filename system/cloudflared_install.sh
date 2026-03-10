@@ -9,8 +9,9 @@ if [[ ! -f "${ENV_FILE}" ]]; then
   exit 1
 fi
 
-# shellcheck disable=SC1090
-source "${ENV_FILE}"
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/system/lib_env.sh"
+load_env_file "${ENV_FILE}"
 
 if [[ -z "${CF_TUNNEL_TOKEN:-}" || "${CF_TUNNEL_TOKEN}" == *"<"* ]]; then
   echo "오류: CF_TUNNEL_TOKEN 값이 설정되지 않았습니다."
