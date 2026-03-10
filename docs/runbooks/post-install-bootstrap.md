@@ -148,3 +148,9 @@ make backup
 2. NPM Proxy Host 등록
 3. Ghost, Nextcloud, Minio, Kafka 개별 검증
 4. Backup 파이프라인을 `--build`로 재기동 후 수동 덤프 검증
+
+```bash
+docker compose --env-file .env -f docker/layer3-apps/backup/docker-compose.yml build --no-cache
+docker compose --env-file .env -f docker/layer3-apps/backup/docker-compose.yml up -d --force-recreate
+docker logs --tail 50 backup-pipeline
+```
