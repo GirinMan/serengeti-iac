@@ -1,0 +1,11 @@
+# 매일 새벽 3시: PostgreSQL 덤프
+0 3 * * * /scripts/dump_postgres.sh >> /dumps/cron.log 2>&1
+
+# 매일 새벽 3시 10분: Neo4j 덤프
+10 3 * * * /scripts/dump_neo4j.sh >> /dumps/cron.log 2>&1
+
+# 매일 새벽 3시 30분: BorgBackup 실행
+30 3 * * * /scripts/run_borg.sh >> /dumps/cron.log 2>&1
+
+# 매주 일요일 새벽 4시: 오래된 덤프 파일 삭제 (30일 이상)
+0 4 * * 0 find /dumps -type f \( -name "*.sql" -o -name "*.gz" -o -name "*.dump" \) -mtime +30 -delete

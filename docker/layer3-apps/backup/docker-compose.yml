@@ -1,0 +1,25 @@
+services:
+  backup:
+    build: .
+    container_name: backup-pipeline
+    restart: unless-stopped
+    entrypoint: ["crond", "-f", "-l", "2"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      NEO4J_CONTAINER: neo4j
+      BORG_PASSPHRASE: ${BORG_PASSPHRASE}
+      BORG_REPO: ${BORG_REPO}
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./crontab:/etc/crontabs/root:ro
+      - /mnt/primary/dumps:/dumps
+      - /mnt/archive/borg-repo:/borg-repo
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - data-tier
+
+networks:
+  data-tier:
+    external: true

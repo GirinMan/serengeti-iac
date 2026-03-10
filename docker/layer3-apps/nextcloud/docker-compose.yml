@@ -1,0 +1,33 @@
+services:
+  nextcloud:
+    image: nextcloud:${NEXTCLOUD_VERSION}
+    container_name: nextcloud
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_HOST_PASSWORD: ${REDIS_PASSWORD}
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD}
+      NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_TRUSTED_DOMAINS}
+      OVERWRITEPROTOCOL: https
+    volumes:
+      - ./html:/var/www/html
+      - /mnt/archive/nextcloud:/var/www/html/data
+    networks:
+      - proxy-tier
+      - data-tier
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:80/status.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  proxy-tier:
+    external: true
+  data-tier:
+    external: true
