@@ -128,7 +128,7 @@ data: check-env network
 
 apps: check-env network dirs
 	@echo "==> [Layer 3] 애플리케이션 실행"
-	$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d
+	$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d --build
 	$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml up -d
 
 backup: check-env network
@@ -144,7 +144,7 @@ app: check-env
 		exit 1; \
 	fi
 	@if [ "$(name)" = "blog" ]; then \
-		$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d --force-recreate; \
+		$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d --build --force-recreate; \
 	elif [ "$(name)" = "nextcloud" ]; then \
 		$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml up -d --force-recreate; \
 	else \

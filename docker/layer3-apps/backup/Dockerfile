@@ -5,7 +5,6 @@ RUN apk add --no-cache \
     borgbackup \
     curl \
     docker-cli \
-    dcron \
     gzip \
     postgresql-client \
     tzdata
@@ -15,4 +14,4 @@ RUN chmod +x /scripts/*.sh
 
 COPY crontab /etc/crontabs/root
 
-CMD ["crond", "-f", "-l", "2"]
+CMD ["busybox", "crond", "-f", "-l", "2", "-L", "/dev/stdout", "-c", "/etc/crontabs"]

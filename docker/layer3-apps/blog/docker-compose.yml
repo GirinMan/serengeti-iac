@@ -1,6 +1,6 @@
 services:
   ghost:
-    image: ghost:5-alpine
+    build: .
     container_name: ghost-blog
     restart: unless-stopped
     environment:
