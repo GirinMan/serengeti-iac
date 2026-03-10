@@ -3,6 +3,8 @@ services:
     image: redis:${REDIS_VERSION}
     container_name: redis
     restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
     volumes:
       - ${PRIMARY_STORAGE_ROOT}/redis:/data
