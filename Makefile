@@ -98,7 +98,7 @@ ssh: check-env
 		-e "s/__SSH_PORT__/$(SSH_PORT)/g" \
 		-e "s/__SSH_USER__/$(SSH_USER)/g" \
 		system/sshd_config | sudo tee /etc/ssh/sshd_config >/dev/null
-	sudo systemctl restart ssh
+	-sudo systemctl restart ssh.service
 	@echo "SSH Port: $(SSH_PORT)"
 
 ufw: check-env

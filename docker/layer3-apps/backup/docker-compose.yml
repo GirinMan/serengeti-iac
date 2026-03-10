@@ -23,11 +23,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - data-tier
-    depends_on:
-      postgres:
-        condition: service_started
-      neo4j:
-        condition: service_started
 
 networks:
   data-tier:

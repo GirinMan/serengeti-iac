@@ -13,11 +13,6 @@ fi
 source "${ROOT_DIR}/system/lib_env.sh"
 load_env_file "${ENV_FILE}"
 
-if [[ -z "${CF_TUNNEL_TOKEN:-}" || "${CF_TUNNEL_TOKEN}" == *"<"* ]]; then
-  echo "오류: CF_TUNNEL_TOKEN 값이 설정되지 않았습니다."
-  exit 1
-fi
-
 echo "[Layer 1] Cloudflare Tunnel 설치 시작"
 
 if ! command -v cloudflared >/dev/null 2>&1; then
@@ -29,6 +24,12 @@ if ! command -v cloudflared >/dev/null 2>&1; then
   sudo apt-get install -y cloudflared
 else
   echo "cloudflared 이미 설치됨"
+fi
+
+if [[ -z "${CF_TUNNEL_TOKEN:-}" || "${CF_TUNNEL_TOKEN}" == *"<"* ]]; then
+  echo "CF_TUNNEL_TOKEN이 없어 패키지 설치만 완료합니다."
+  echo "토큰 준비 후 동일 스크립트를 다시 실행하면 서비스 등록을 진행합니다."
+  exit 0
 fi
 
 sudo cloudflared service install "${CF_TUNNEL_TOKEN}"

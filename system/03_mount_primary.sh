@@ -32,10 +32,11 @@ fi
 PARTITION="${PRIMARY_SSD_DISK}-part1"
 
 if [[ -b "${PARTITION}" ]]; then
-  CURRENT_MOUNT="$(findmnt -nr -S "${PARTITION}" -o TARGET || true)"
-  if [[ -n "${CURRENT_MOUNT}" && "${CURRENT_MOUNT}" != "${PRIMARY_STORAGE_ROOT}" ]]; then
-    echo "오류: ${PARTITION} 이(가) 이미 ${CURRENT_MOUNT} 에 마운트되어 있습니다."
-    echo "현재 서버 상태를 유지한 채 진행하려면 .env 의 PRIMARY_STORAGE_ROOT 를 ${CURRENT_MOUNT} 로 맞추거나,"
+  CURRENT_MOUNTS="$(findmnt -nr -S "${PARTITION}" -o TARGET || true)"
+  if [[ -n "${CURRENT_MOUNTS}" ]] && ! grep -Fxq "${PRIMARY_STORAGE_ROOT}" <<<"${CURRENT_MOUNTS}"; then
+    echo "오류: ${PARTITION} 이(가) 이미 다음 경로에 마운트되어 있습니다:"
+    echo "${CURRENT_MOUNTS}"
+    echo "현재 서버 상태를 유지한 채 진행하려면 .env 의 PRIMARY_STORAGE_ROOT 를 실제 마운트 경로에 맞추거나,"
     echo "별도 마이그레이션 절차 후 다시 실행하세요."
     exit 1
   fi

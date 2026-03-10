@@ -21,8 +21,9 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get -y full-upgrade
 
 echo ">> 필수 패키지 설치"
 sudo apt-get install -y \
-  curl wget git vim htop tmux tree unzip jq \
+  curl wget git vim htop tmux tree unzip jq rsync \
   ufw fail2ban \
+  openssh-server \
   ca-certificates gnupg lsb-release software-properties-common \
   zfsutils-linux borgbackup unattended-upgrades
 

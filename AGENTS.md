@@ -4,6 +4,11 @@
 **대상 환경**: 우영하우스 403호, Ubuntu Server 24.04 LTS (<server_private_ip>)  
 **목적**: 오프라인 코딩 에이전트가 검색 없이 바로 구현 가능한 수준의 상세 기술 문서
 
+**저장장치 구성 (실제 시스템 기준)**:
+- **1TB SSD** = 메인 OS 드라이브 (루트 `/`, Ubuntu·Docker·NPM 등)
+- **500GB SSD** = 보조 저장소 (`/mnt/primary`, DB·캐시·덤프 등)
+- OS 설치 드라이브 변경이 어렵기 때문에 위 구성을 문서 전반에 반영하였다.
+
 **리포지토리 범위 보충**:
 - `system/`, `docker/`는 홈랩 서버 자체를 구성하는 IaC 자산이다.
 - `user_cli/`는 서버 런타임이 아니라 운영자 개인 Ubuntu 24.04 CLI 환경을 부트스트랩하는 보조 자산이다.
@@ -73,23 +78,23 @@ External Network (Internet)
 
 | 디스크 | 용량 | 모델 | 내구성 | 용도 |
 |--------|------|------|--------|------|
-| SSD #1 | 500GB | Samsung 970 EVO Plus | 300TBW | OS Root (Read 중심) |
-| SSD #2 | 1TB | SK Hynix Gold P31 | 750TBW | Primary Storage (Write Heavy) |
+| SSD #1 | 1TB | SK Hynix Gold P31 | 750TBW | OS Root (메인 OS 저장소) |
+| SSD #2 | 500GB | Samsung 970 EVO Plus | 300TBW | Primary Storage (보조 저장소, Write Heavy) |
 | HDD #1 | 8TB | 범용 HDD | N/A | Archive Storage (ZFS Mirror) |
 | HDD #2 | 8TB | 범용 HDD | N/A | Archive Storage (ZFS Mirror) |
 
 ### 2.2 스토리지 티어링 전략
 
-#### Root Storage (500GB SSD)
+#### Root Storage (1TB SSD)
 - **마운트**: `/` (기본 시스템 루트)
 - **용도**:
-  - Ubuntu 24.04 LTS OS
+  - Ubuntu 24.04 LTS OS (메인 OS 드라이브)
   - Docker 엔진 및 이미지 캐시
   - 시스템 로그 (`/var/log`)
   - NPM, Cloudflared 등 Ops 레이어 컨테이너 볼륨
 - **파일시스템**: ext4 (기본)
 
-#### Primary Storage (1TB SSD)
+#### Primary Storage (500GB SSD, 보조 저장소)
 - **마운트**: `/mnt/primary`
 - **용도**:
   - PostgreSQL 데이터 (`/mnt/primary/postgres`)
@@ -99,7 +104,7 @@ External Network (Internet)
   - Redis AOF/RDB 백업 (`/mnt/primary/redis`)
   - DB 임시 덤프 파일 (`/mnt/primary/dumps`)
 - **파일시스템**: ext4 또는 xfs (선택)
-- **특징**: 고속 랜덤 I/O, 빈번한 쓰기 작업
+- **특징**: 고속 랜덤 I/O, 빈번한 쓰기 작업 (약 450GB 가용)
 
 #### Archive Storage (8TB HDD x2 ZFS Mirror)
 - **마운트**: `/mnt/archive`
@@ -171,7 +176,7 @@ data-tier (bridge):
 ├── system/                           # Layer 0: System Foundation
 │   ├── 01_setup.sh                   # 기본 패키지 설치
 │   ├── 02_zfs_archive.sh             # ZFS Pool 생성 및 마운트
-│   ├── 03_mount_primary.sh           # 1TB SSD 마운트
+│   ├── 03_mount_primary.sh           # 500GB SSD(보조) 마운트
 │   ├── sshd_config                   # SSH 설정 파일
 │   ├── ufw.sh                        # 방화벽 규칙
 │   └── cloudflared_install.sh        # Cloudflare Tunnel 설치
@@ -452,19 +457,19 @@ echo "[Layer 0] ZFS Archive Storage 구성 완료"
 echo "마운트: /mnt/archive (약 7.2TB 가용)"
 ```
 
-### 6.3 `system/03_mount_primary.sh` (1TB SSD Primary Storage 마운트)
+### 6.3 `system/03_mount_primary.sh` (500GB SSD 보조 저장소 마운트)
 
 ```bash
 #!/bin/bash
 set -euo pipefail
 
-echo "[Layer 0] Primary Storage (1TB SSD) 마운트 시작"
+echo "[Layer 0] Primary Storage (500GB SSD 보조 저장소) 마운트 시작"
 
-# 디스크 확인 (실제 환경에 맞게 수정)
-DISK="/dev/disk/by-id/ata-SK_Hynix_P31_SERIAL"
+# 디스크 확인 (실제 환경에 맞게 수정 - 500GB 보조 SSD)
+DISK="/dev/disk/by-id/ata-Samsung_970_EVO_Plus_SERIAL"
 
-echo "주의: 아래 명령어로 실제 1TB SSD 디스크 ID를 확인하세요."
-echo "  ls -l /dev/disk/by-id/ | grep -i hynix"
+echo "주의: 아래 명령어로 실제 500GB SSD 디스크 ID를 확인하세요."
+echo "  ls -l /dev/disk/by-id/ | grep -i samsung"
 echo ""
 read -p "디스크 경로를 확인했습니까? 계속하려면 'yes' 입력: " confirm
 if [[ "$confirm" != "yes" ]]; then
@@ -505,7 +510,7 @@ sudo chown -R "$USER:$USER" /mnt/primary
 mkdir -p /mnt/primary/{postgres,neo4j,elasticsearch,kafka,redis,dumps}
 
 echo "[Layer 0] Primary Storage 마운트 완료"
-echo "마운트: /mnt/primary (약 950GB 가용)"
+echo "마운트: /mnt/primary (약 450GB 가용)"
 df -h /mnt/primary
 ```
 
