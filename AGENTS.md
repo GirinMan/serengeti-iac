@@ -298,13 +298,13 @@ REDIS_PASSWORD=<masked_secret>
 # ===========================
 # Kafka KRaft
 # ===========================
-KAFKA_VERSION=3.6
+KAFKA_VERSION=3.9.2
 KAFKA_CLUSTER_ID=kafka-homelab-cluster
 
 # ===========================
 # Minio
 # ===========================
-MINIO_VERSION=latest
+MINIO_VERSION=RELEASE.2025-09-07T16-13-09Z
 MINIO_ROOT_USER=<masked_access_key>
 MINIO_ROOT_PASSWORD=<masked_secret>
 
@@ -834,34 +834,30 @@ networks:
 ```yaml
 services:
   kafka:
-    image: bitnami/kafka:3.6
+    image: apache/kafka:${KAFKA_VERSION}
     container_name: kafka
     restart: unless-stopped
     environment:
-      # KRaft 모드 설정 (Zookeeper 불필요)
-      KAFKA_CFG_NODE_ID: 1
-      KAFKA_CFG_PROCESS_ROLES: broker,controller
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@localhost:<kafka_controller_port>
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:<kafka_broker_port>,CONTROLLER://:<kafka_controller_port>
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:<kafka_broker_port>
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      # 클러스터 ID (고유값, 변경 가능)
-      KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-      # 로그 및 데이터 디렉토리
-      KAFKA_CFG_LOG_DIRS: /bitnami/kafka/data
-      # 메모리 설정
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:<kafka_controller_port>
+      KAFKA_LISTENERS: PLAINTEXT://:<kafka_broker_port>,CONTROLLER://:<kafka_controller_port>
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:<kafka_broker_port>
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
       KAFKA_HEAP_OPTS: "-Xms512m -Xmx1g"
     volumes:
-      - /mnt/primary/kafka:/bitnami/kafka/data
+      - /mnt/primary/kafka:/var/lib/kafka/data
     networks:
       - data-tier
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:<kafka_broker_port>"]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server 127.0.0.1:<kafka_broker_port> >/dev/null 2>&1"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
 
 networks:
   data-tier:
@@ -881,7 +877,7 @@ docker exec -it kafka kafka-topics.sh \
 ```yaml
 services:
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: minio
     restart: unless-stopped
     command: server /data --console-address ":<minio_console_port>"
