@@ -10,8 +10,10 @@ services:
     volumes:
       - ${ARCHIVE_STORAGE_ROOT}/minio:/data
     networks:
-      - data-tier
-      - proxy-tier
+      data-tier:
+        aliases:
+          - plane-minio
+      proxy-tier:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:${MINIO_API_PORT}/minio/health/live"]
       interval: 30s

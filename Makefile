@@ -24,7 +24,7 @@ help:
 	@echo "make apps        - Layer 3 애플리케이션 실행"
 	@echo "make backup      - 백업 파이프라인 실행"
 	@echo "make bootstrap   - Layer 1~3 전체 스택 순차 실행"
-	@echo "make app name=<content|nextcloud> - 개별 앱 재배포"
+	@echo "make app name=<blog|content|nextcloud|plane> - 개별 앱 재배포"
 	@echo "make docs-host   - 현재 호스트 상태 수집 문서 생성"
 	@echo "make status      - 전체 상태 확인"
 	@echo "make logs name=<container> - 컨테이너 로그 확인"
@@ -55,13 +55,17 @@ validate: check-env
 		echo "==> Docker Compose 설정 확인"; \
 		$(COMPOSE) -f docker/layer1-ops/npm/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/postgres/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer2-data/mariadb/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/neo4j/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/elasticsearch/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/redis/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/kafka/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/minio/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer2-data/rabbitmq/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer3-apps/content/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer3-apps/plane/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer3-apps/backup/docker-compose.yml config >/dev/null; \
 	else \
 		echo "==> Docker가 없어 Compose 검증은 건너뜁니다."; \
@@ -79,7 +83,14 @@ dirs:
 	@echo "==> 로컬 bind mount 디렉토리 생성"
 	mkdir -p docker/layer1-ops/npm/data
 	mkdir -p docker/layer1-ops/npm/letsencrypt
+	mkdir -p $(PRIMARY_STORAGE_ROOT)/mariadb
+	mkdir -p $(PRIMARY_STORAGE_ROOT)/rabbitmq
+	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/api
+	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/worker
+	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/beat
+	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/migrator
 	mkdir -p docker/layer3-apps/content/extensions
+	mkdir -p $(ARCHIVE_STORAGE_ROOT)/wordpress/html
 	mkdir -p docker/layer3-apps/nextcloud/html
 	mkdir -p $(ARCHIVE_STORAGE_ROOT)/directus/uploads
 	mkdir -p inventory/raw
@@ -121,18 +132,24 @@ ops: check-env network dirs
 data: check-env network
 	@echo "==> [Layer 2] 데이터 플랫폼 실행"
 	$(COMPOSE) -f docker/layer2-data/postgres/docker-compose.yml up -d
+	$(COMPOSE) -f docker/layer2-data/mariadb/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer2-data/neo4j/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer2-data/elasticsearch/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer2-data/redis/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer2-data/kafka/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer2-data/minio/docker-compose.yml up -d
+	$(COMPOSE) -f docker/layer2-data/rabbitmq/docker-compose.yml up -d
 
 apps: check-env network dirs
 	@echo "==> [Layer 3] 애플리케이션 실행"
+	$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d
 	docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='$(DIRECTUS_DB)'" | grep -q 1 || \
 		docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -c "CREATE DATABASE $(DIRECTUS_DB);"
+	docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='$(PLANE_DB_NAME)'" | grep -q 1 || \
+		docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -c "CREATE DATABASE $(PLANE_DB_NAME);"
 	$(COMPOSE) -f docker/layer3-apps/content/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml up -d
+	$(COMPOSE) -f docker/layer3-apps/plane/docker-compose.yml up -d
 
 backup: check-env network
 	@echo "==> [Layer 3] 백업 파이프라인 실행"
@@ -143,15 +160,21 @@ bootstrap: ops data apps backup
 
 app: check-env
 	@if [ -z "$(name)" ]; then \
-		echo "사용법: make app name=<content|nextcloud>"; \
+		echo "사용법: make app name=<blog|content|nextcloud|plane>"; \
 		exit 1; \
 	fi
-	@if [ "$(name)" = "content" ]; then \
+	@if [ "$(name)" = "blog" ]; then \
+		$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d --force-recreate; \
+	elif [ "$(name)" = "content" ]; then \
 		docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='$(DIRECTUS_DB)'" | grep -q 1 || \
 			docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -c "CREATE DATABASE $(DIRECTUS_DB);"; \
 		$(COMPOSE) -f docker/layer3-apps/content/docker-compose.yml up -d --force-recreate; \
 	elif [ "$(name)" = "nextcloud" ]; then \
 		$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml up -d --force-recreate; \
+	elif [ "$(name)" = "plane" ]; then \
+		docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='$(PLANE_DB_NAME)'" | grep -q 1 || \
+			docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -c "CREATE DATABASE $(PLANE_DB_NAME);"; \
+		$(COMPOSE) -f docker/layer3-apps/plane/docker-compose.yml up -d --force-recreate; \
 	else \
 		echo "지원하지 않는 앱입니다: $(name)"; \
 		exit 1; \
@@ -181,12 +204,16 @@ docs-host:
 clean:
 	@echo "==> 모든 컨테이너 중단"
 	-$(COMPOSE) -f docker/layer3-apps/backup/docker-compose.yml down --remove-orphans
+	-$(COMPOSE) -f docker/layer3-apps/plane/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer3-apps/content/docker-compose.yml down --remove-orphans
+	-$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml down --remove-orphans
+	-$(COMPOSE) -f docker/layer2-data/rabbitmq/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/minio/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/kafka/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/redis/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/elasticsearch/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/neo4j/docker-compose.yml down --remove-orphans
+	-$(COMPOSE) -f docker/layer2-data/mariadb/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/postgres/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer1-ops/npm/docker-compose.yml down --remove-orphans
