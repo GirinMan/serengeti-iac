@@ -1,26 +1,32 @@
 # Operator Memo
 
-사용자 응답이 필요하지만 지금은 작업을 계속하기 위해 보류한 항목들이다.
+아래 항목은 자동으로 결정하면 위험하므로, 이번 작업에서는 메모로 남기고 건너뛴다.
 
-## Storage Decisions
+## Human Decisions Needed
 
-- 500GB SSD 현재 마운트는 `/data`다.
-  - 선택지 1: IaC의 `PRIMARY_STORAGE_ROOT`를 `/data`로 채택
-  - 선택지 2: 데이터를 비운 뒤 `/mnt/primary`로 재마운트
-- 8TB HDD 중 적어도 1개에는 기존 NTFS 파티션이 있다.
-  - ZFS mirror 초기화 전에 보존 여부를 확인해야 한다.
+1. 500GB SSD 경로 정책
+현재 호스트는 보조 SSD를 `/data` 에 마운트하고 있다. 목표 설계는 `/mnt/primary` 이다.
+결정 필요:
+- `/data` 를 유지하고 `.env` 의 `PRIMARY_STORAGE_ROOT=/data` 로 운영할지
+- 데이터를 비운 뒤 `/mnt/primary` 로 재마운트할지
 
-## Host Identity
+2. 8TB HDD 초기화 가능 여부
+ZFS mirror 대상 중 최소 1개 디스크에 기존 `ntfs` 파티션이 있다.
+결정 필요:
+- 두 HDD를 모두 초기화해도 되는지
+- 기존 데이터를 백업/이관한 뒤 진행할지
 
-- 현재 호스트에는 `openssh-server`, `docker`, `cloudflared`, `zfsutils-linux`가 보이지 않는다.
-- 서버 최종 상태가 아닌 워크스테이션일 가능성이 있다.
-- 실제 홈랩 서버가 다른 장비라면, 같은 인벤토리 수집을 그 장비에서 다시 실행해야 한다.
+3. 대상 호스트 확정
+현재 인벤토리는 Docker, Cloudflared, SSH 서버가 없는 일반 Ubuntu 환경으로 보인다.
+결정 필요:
+- 이 머신이 실제 홈랩 서버 본체가 맞는지
+- 아니면 운영자 워크스테이션에서 저장소만 준비 중인 상태인지
 
-## Safe Next Actions
+## Safe Next Steps Without Human Input
 
-- `.env`에 실제 디스크 ID와 원하는 마운트 경로를 반영
-- `make preflight` 실행
-- 결과가 정리되면 그 다음 `make system`, `make storage` 순서로 진행
+- `.env` 템플릿과 Compose/스크립트를 계속 정리한다.
+- preflight, inventory, 운영 문서를 보강한다.
+- 실제 패키지 설치나 디스크 초기화 같은 destructive 작업은 보류한다.
 
 ## Protected Data
 

@@ -4,6 +4,8 @@
 
 - `inventory/scripts/collect_host_state.sh`
   - 현재 호스트의 OS, 디스크, 네트워크, Docker, 주요 서비스 상태를 수집합니다.
+- `inventory/scripts/storage_env_candidates.sh`
+  - `/dev/disk/by-id` 기준으로 `.env` 에 넣을 디스크 경로 후보를 출력합니다.
 - `inventory/raw/`
   - 수집 원본 출력 경로입니다.
   - IP, 디스크 식별자, 마운트 정보가 포함될 수 있으므로 Git에 올리지 않습니다.

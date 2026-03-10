@@ -5,7 +5,7 @@ COMPOSE = docker compose --env-file .env
 PRIMARY_STORAGE_ROOT ?= /mnt/primary
 ARCHIVE_STORAGE_ROOT ?= /mnt/archive
 
-.PHONY: help check-env validate preflight system storage ssh ufw cloudflared network dirs ops data apps backup bootstrap app status logs docs-host clean
+.PHONY: help check-env validate preflight storage-map system storage ssh ufw cloudflared network dirs ops data apps backup bootstrap app status logs docs-host clean
 
 help:
 	@echo "===== Serengeti Homelab IaC ====="
@@ -16,6 +16,7 @@ help:
 	@echo "make cloudflared - Cloudflare Tunnel 설치"
 	@echo "make validate    - 주요 쉘 스크립트 문법 및 compose 설정 검증"
 	@echo "make preflight   - 현재 호스트가 Layer 0 적용 가능한지 점검"
+	@echo "make storage-map - 디스크 ID와 .env 후보값 출력"
 	@echo "make network     - Docker 네트워크 생성"
 	@echo "make dirs        - 로컬 bind mount 디렉토리 생성"
 	@echo "make ops         - Layer 1 서비스 실행"
@@ -49,6 +50,7 @@ validate: check-env
 	bash -n docker/layer3-apps/backup/scripts/dump_neo4j.sh
 	bash -n docker/layer3-apps/backup/scripts/run_borg.sh
 	bash -n inventory/scripts/collect_host_state.sh
+	bash -n inventory/scripts/storage_env_candidates.sh
 	@if command -v docker >/dev/null 2>&1; then \
 		echo "==> Docker Compose 설정 확인"; \
 		$(COMPOSE) -f docker/layer1-ops/npm/docker-compose.yml config >/dev/null; \
@@ -68,6 +70,10 @@ validate: check-env
 preflight: check-env
 	@echo "==> Layer 0 사전 점검"
 	bash system/00_preflight.sh
+
+storage-map:
+	@echo "==> 스토리지 후보값 수집"
+	bash inventory/scripts/storage_env_candidates.sh
 
 dirs:
 	@echo "==> 로컬 bind mount 디렉토리 생성"
