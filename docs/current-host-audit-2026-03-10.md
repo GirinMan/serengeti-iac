@@ -43,15 +43,15 @@
 ## Observations
 
 - 현재 호스트는 실제 홈랩 서버 본체이며 Layer 0 기초 설정이 대부분 적용됐다.
-- Docker 기반 Layer 1~2 서비스는 정상 기동했고, Layer 3에서는 Nextcloud가 healthy 상태다.
-- 남은 앱 계층 이슈는 Ghost 초기 DB 마이그레이션 충돌과 backup 컨테이너 cron 런타임 재시작이다.
+- Docker 기반 Layer 1~2 서비스는 정상 기동했고, Layer 3에서는 Nextcloud와 backup-pipeline이 올라와 있다.
+- 콘텐츠 서비스는 Ghost 대신 Directus로 재설계가 끝났고, 현재 세션 제약 때문에 정적 검증까지만 완료됐다.
 - `/home/girinman/Downloads/onedrive` 보호 원칙은 유지 중이며 작업 과정에서 건드리지 않았다.
 
 ## Open Items
 
 - Cloudflare Tunnel 토큰과 실제 공인 도메인 값은 사람 입력이 필요하다.
-- Ghost 블로그 DB는 새 DB 기준으로 리셋 후 재기동 검증이 필요하다.
-- backup 컨테이너는 cron 구현 변경 후 재빌드/재검증이 필요하다.
+- 현재 세션은 root/Docker daemon 접근이 막혀 있어 `directus` DB 생성과 컨테이너 기동은 운영자 세션에서 재확인해야 한다.
+- backup 컨테이너는 repo 기준 수정이 끝났고 장기 관찰만 남았다.
 
 ## Actions Already Added To IaC
 
@@ -59,4 +59,4 @@
 - `system/00_preflight.sh` 를 추가해 보조 SSD 기존 마운트, ZFS 대상 디스크 기존 파일시스템, 주요 서비스 설치 상태를 비파괴 점검하도록 했다.
 - `make storage` 전에 `make preflight` 가 자동 실행되도록 연결했다.
 - Kafka는 공식 `apache/kafka` 이미지 기준으로 정리했다.
-- Ghost는 PostgreSQL 드라이버를 포함한 커스텀 이미지를 사용하도록 전환했다.
+- Layer 3 콘텐츠 플랫폼은 Ghost 대신 Directus를 사용하도록 재설계했다.

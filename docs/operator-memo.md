@@ -9,26 +9,21 @@
 - 실제 `CF_TUNNEL_TOKEN`
 - 실제 공인 도메인과 Cloudflare DNS 위임 완료 상태
 
-2. Ghost 초기 DB 리셋 실행
+2. 런타임 재기동 검증
 현재 상태:
-- `ghost-blog` 는 PostgreSQL 드라이버 누락 문제는 해결됨
-- 다만 `ghost_blog` DB 초기 마이그레이션이 꼬여 `migrations_lock` 제약조건 충돌로 재시작 중
+- 현재 세션은 `sudo` 와 Docker daemon 접근이 막혀 있다.
+- repo에는 `Directus + existing PostgreSQL` 재설계와 `backup` cron 수정이 반영됐다.
 메모:
-- 새로 만든 블로그 DB이므로 드롭 후 재생성이 가장 빠른 복구 경로다.
-- 현재 세션에서는 Docker API 접근이 불안정해 실제 DB 리셋 명령 재검증이 보류됨
-
-3. Backup 컨테이너 재빌드 확인
-현재 상태:
-- `backup-pipeline` 는 `setpgid: Operation not permitted` 로 재시작 중
-- repo에서는 `busybox crond` 경로로 정리했다.
-메모:
-- 변경 후 `docker compose ... build --no-cache && up -d --force-recreate` 재확인이 필요하다.
+- 운영자 세션에서는 아래 순서로 재검증하면 된다.
+- `docker exec -i postgres psql -U "$POSTGRES_USER" -d postgres -c "CREATE DATABASE directus;"`
+- `docker compose --env-file .env -f docker/layer3-apps/content/docker-compose.yml up -d`
+- `docker compose --env-file .env -f docker/layer3-apps/backup/docker-compose.yml up -d --build --force-recreate`
 
 ## Safe Next Steps Without Human Input
 
 - `.env` 템플릿과 Compose/스크립트를 계속 정리한다.
 - preflight, inventory, 운영 문서를 보강한다.
-- Docker API 접근이 허용되는 세션에서 Ghost/Backup 재기동 검증을 마저 수행한다.
+- Docker API 접근이 허용되는 세션에서 Directus/Backup 재기동 검증을 마저 수행한다.
 
 ## Protected Data
 

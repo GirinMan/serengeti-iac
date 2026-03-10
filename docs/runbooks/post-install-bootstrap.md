@@ -30,13 +30,13 @@ docker inspect --format '{{.Name}} {{if .State.Health}}{{.State.Health.Status}}{
 
 ## 3. Database Initialization
 
-현재 리포지토리 기준으로 명시적 PostgreSQL 초기화가 필요한 애플리케이션 DB는 `ghost_blog`, `nextcloud`다.
+현재 리포지토리 기준으로 명시적 PostgreSQL 초기화가 필요한 애플리케이션 DB는 `directus`, `nextcloud`다.
 
 ```bash
 docker exec -i postgres psql -U "${POSTGRES_USER}" -d postgres -tc \
-  "SELECT 1 FROM pg_database WHERE datname='ghost_blog'" | grep -q 1 || \
+  "SELECT 1 FROM pg_database WHERE datname='directus'" | grep -q 1 || \
 docker exec -i postgres psql -U "${POSTGRES_USER}" -d postgres -c \
-  "CREATE DATABASE ghost_blog;"
+  "CREATE DATABASE directus;"
 
 docker exec -i postgres psql -U "${POSTGRES_USER}" -d postgres -tc \
   "SELECT 1 FROM pg_database WHERE datname='nextcloud'" | grep -q 1 || \
@@ -60,10 +60,10 @@ NPM Admin은 현재 compose 기준으로 loopback에만 노출된다.
 
 Proxy Host를 아래처럼 등록한다.
 
-- Domain: `${CF_BLOG_HOST}`
+- Domain: `${CF_CONTENT_HOST}`
 - Scheme: `http`
-- Forward Hostname / IP: `ghost-blog`
-- Forward Port: `${GHOST_PORT}`
+- Forward Hostname / IP: `content-api`
+- Forward Port: `${DIRECTUS_PORT}`
 
 - Domain: `${CF_NAS_HOST}`
 - Scheme: `http`
@@ -77,24 +77,24 @@ Proxy Host를 아래처럼 등록한다.
 
 Cloudflare Tunnel과 공인 도메인 연결 전까지는 SSL 발급을 강제하지 않는다. 먼저 NPM 내부 라우팅과 upstream 응답만 검증한다.
 
-## 5. Ghost Validation
+## 5. Content Validation
 
-현재 `docker/layer3-apps/blog/docker-compose.yml`은 `ghost-blog:${GHOST_PORT}`를 `proxy-tier`와 `data-tier`에 붙인다.
+현재 `docker/layer3-apps/content/docker-compose.yml`은 `content-api:${DIRECTUS_PORT}`를 `proxy-tier`와 `data-tier`에 붙인다.
 
 ```bash
-docker logs --tail 50 ghost-blog
-docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' ghost-blog
-docker exec ghost-blog wget -qO- "http://127.0.0.1:${GHOST_PORT}/" | head
+docker logs --tail 50 content-api
+docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' content-api
+docker exec content-api wget -qO- "http://127.0.0.1:${DIRECTUS_PORT}/server/health"
 ```
 
-fresh install 상태에서 `migrations_lock` 충돌로 Ghost가 재시작하면 DB를 깨끗하게 다시 만든다.
+관리자 계정은 `.env` 의 `DIRECTUS_ADMIN_EMAIL`, `DIRECTUS_ADMIN_PASSWORD` 로 초기화된다.
 
 ```bash
-docker compose --env-file .env -f docker/layer3-apps/blog/docker-compose.yml down
-docker exec -i postgres psql -U "${POSTGRES_USER}" -d postgres -c "DROP DATABASE IF EXISTS ghost_blog;"
-docker exec -i postgres psql -U "${POSTGRES_USER}" -d postgres -c "CREATE DATABASE ghost_blog;"
-docker compose --env-file .env -f docker/layer3-apps/blog/docker-compose.yml up -d --build
-docker logs --tail 100 ghost-blog
+docker compose --env-file .env -f docker/layer3-apps/content/docker-compose.yml down
+docker exec -i postgres psql -U "${POSTGRES_USER}" -d postgres -c "DROP DATABASE IF EXISTS directus;"
+docker exec -i postgres psql -U "${POSTGRES_USER}" -d postgres -c "CREATE DATABASE directus;"
+docker compose --env-file .env -f docker/layer3-apps/content/docker-compose.yml up -d
+docker logs --tail 100 content-api
 ```
 
 ## 6. Nextcloud Validation
@@ -144,9 +144,9 @@ make backup
 
 그 다음 순서로 진행한다.
 
-1. PostgreSQL `ghost_blog`, `nextcloud` DB 생성
+1. PostgreSQL `directus`, `nextcloud` DB 생성
 2. NPM Proxy Host 등록
-3. Ghost, Nextcloud, Minio, Kafka 개별 검증
+3. Directus, Nextcloud, Minio, Kafka 개별 검증
 4. Backup 파이프라인을 `--build`로 재기동 후 수동 덤프 검증
 
 ```bash
