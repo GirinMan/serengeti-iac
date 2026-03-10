@@ -1,0 +1,24 @@
+# Rendered by `make ssh`
+Port __SSH_PORT__
+
+AddressFamily inet
+Protocol 2
+
+PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+PermitEmptyPasswords no
+KbdInteractiveAuthentication no
+ChallengeResponseAuthentication no
+
+X11Forwarding no
+MaxAuthTries 3
+LoginGraceTime 20
+ClientAliveInterval 300
+ClientAliveCountMax 2
+
+SyslogFacility AUTH
+LogLevel VERBOSE
+
+AllowUsers __SSH_USER__
