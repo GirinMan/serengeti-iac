@@ -41,9 +41,8 @@
 ## Safe Next Steps Without Human Input
 
 - Plane 이미지 pull을 끝내고 compose 전체를 재기동한다.
-- Minio 버킷 `plane-uploads` 생성 경로를 고정 버전 이미지 기준으로 정리한다.
+- `make runtime-snapshot` 으로 중간 상태 raw 로그를 계속 남긴다.
 - post-install runbook, host audit, progress log를 현재 상태에 맞게 계속 갱신한다.
-- 필요 시 기존 `minio:latest` 런타임을 고정 태그 기준으로 교체 재기동한다.
 
 ## Protected Data
 
