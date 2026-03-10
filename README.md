@@ -225,14 +225,18 @@ data-tier
 
 ## 현재 저장소 상태
 
-중요한 점은, `README.md`에서 설명하는 전체 아키텍처가 아직 모두 코드로 커밋되어 있지는 않다는 것입니다.
+현재는 설계 문서만 있는 상태를 지나, `AGENTS.md`의 구조를 따라가는 1차 IaC 스캐폴딩이 이미 들어간 상태입니다.
 
 ### 현재 실제로 저장소에 들어 있는 것
 
 ```text
 serengeti-iac/
+├── .env.example
+├── Makefile
 ├── AGENTS.md
 ├── README.md
+├── system/
+├── docker/
 └── user_cli/
     ├── init_ubuntu.sh
     ├── .zshrc
@@ -241,12 +245,21 @@ serengeti-iac/
 
 ### 현재 각 파일의 역할
 
+- `.env.example`
+  - 실제 배포 전 복사해서 사용하는 환경 변수 템플릿입니다.
+  - 비밀번호, 토큰, 디스크 ID, 포트 등은 모두 플레이스홀더 상태로 들어 있습니다.
+- `Makefile`
+  - 시스템 설정, Docker 네트워크 생성, 계층별 compose 실행을 묶는 진입점입니다.
 - `AGENTS.md`
   - 홈랩의 전체 설계 문서입니다.
   - 목표 디렉토리 구조, 계층별 서비스, 스토리지/네트워크 전략이 자세히 정리돼 있습니다.
 - `README.md`
   - 사람이 빠르게 프로젝트를 이해하기 위한 소개 문서입니다.
   - 현재 상태와 목표 상태를 연결해 설명합니다.
+- `system/`
+  - 호스트 OS 기준의 기초 설정 스크립트와 SSH/UFW/Cloudflare Tunnel 설정 템플릿이 들어 있습니다.
+- `docker/`
+  - `proxy-tier`, `data-tier`, 블로그, Nextcloud, 백업까지 포함한 Docker Compose 정의가 들어 있습니다.
 - `user_cli/init_ubuntu.sh`
   - 운영자 로컬 Ubuntu 환경을 셋업하는 스크립트입니다.
 - `user_cli/.zshrc`
@@ -254,17 +267,17 @@ serengeti-iac/
 - `user_cli/.tmux.conf.local`
   - `gpakosz/.tmux` 기반의 tmux 로컬 오버라이드 설정입니다.
 
-### 아직 설계 문서에만 있는 것
+### 아직 남아 있는 작업
 
-아래 항목은 설계 문서에는 정의되어 있지만, 현재 작업 트리에는 아직 실제 파일로 존재하지 않습니다.
+구조 자체는 들어왔지만, 아직 다음 단계가 남아 있습니다.
 
-- `system/`
-- `docker/`
-- `.env.example`
-- `Makefile`
-- 백업 파이프라인 관련 스크립트와 Dockerfile
+- 실제 운영값을 채운 `.env`
+- 실서버에서의 실행 검증
+- 애플리케이션 초기 DB 생성 및 프록시 호스트 연결
+- 백업/복구 실제 테스트
+- 서비스별 운영 문서 보강
 
-즉, 지금 이 저장소는 "구현 완료본"이 아니라 "구현 기준이 되는 설계 + 일부 유틸리티" 상태입니다.
+즉, 지금 이 저장소는 "문서만 있는 상태"는 아니지만, 아직 실운영 검증 전의 초기 구현 단계라고 보는 것이 맞습니다.
 
 ---
 
@@ -352,8 +365,8 @@ serengeti-iac/
 
 1. 이 `README.md`를 읽고 프로젝트의 큰 그림을 파악합니다.
 2. [AGENTS.md](/home/girinman/workspace/serengeti-iac/AGENTS.md)를 읽고 상세 설계를 확인합니다.
-3. 실제로 현재 저장소에 무엇이 있는지 `user_cli/`를 확인합니다.
-4. 구현을 시작할 때는 `AGENTS.md`의 목표 구조를 기준으로 `system/`, `docker/`, `Makefile`을 채워 나갑니다.
+3. 실제 구현 파일인 `system/`, `docker/`, `Makefile`, `.env.example`을 확인합니다.
+4. 운영자 로컬 환경이 필요하면 `user_cli/`를 사용합니다.
 
 ---
 
@@ -369,13 +382,13 @@ serengeti-iac/
 
 ## 앞으로 채워질 구현 항목
 
-현재 설계 기준으로 보면, 다음이 구현 우선순위가 됩니다.
+현재 기준으로 보면, 다음이 구현 우선순위가 됩니다.
 
-1. `system/` 디렉토리의 호스트 설정 스크립트 구체화
-2. `docker/` 계층별 `docker-compose.yml` 추가
-3. `.env.example` 정리
-4. `Makefile`을 통한 배포 흐름 통합
-5. 백업 파이프라인 및 복구 검증 절차 추가
+1. `.env` 실값 작성 및 호스트별 값 확정
+2. Ubuntu 서버에서 Layer 0 스크립트 실제 실행 검증
+3. Docker 데이터 서비스와 애플리케이션의 실제 기동 검증
+4. Nginx Proxy Manager 및 Cloudflare Tunnel 연동 검증
+5. 백업 파이프라인 및 복구 절차 실전 테스트
 
 ---
 
