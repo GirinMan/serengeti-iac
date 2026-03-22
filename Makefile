@@ -50,9 +50,9 @@ validate: check-env
 	bash -n docker/layer3-apps/backup/scripts/dump_postgres.sh
 	bash -n docker/layer3-apps/backup/scripts/dump_neo4j.sh
 	bash -n docker/layer3-apps/backup/scripts/run_borg.sh
-	bash -n inventory/scripts/collect_host_state.sh
-	bash -n inventory/scripts/storage_env_candidates.sh
-	bash -n inventory/scripts/runtime_snapshot.sh
+	bash -n scripts/collect_host_state.sh
+	bash -n scripts/storage_env_candidates.sh
+	bash -n scripts/runtime_snapshot.sh
 	@if command -v docker >/dev/null 2>&1; then \
 		echo "==> Docker Compose 설정 확인"; \
 		$(COMPOSE) -f docker/layer1-ops/npm/docker-compose.yml config >/dev/null; \
@@ -77,11 +77,11 @@ preflight: check-env
 
 storage-map:
 	@echo "==> 스토리지 후보값 수집"
-	bash inventory/scripts/storage_env_candidates.sh
+	bash scripts/storage_env_candidates.sh
 
 runtime-snapshot:
 	@echo "==> 현재 런타임 상태 수집"
-	bash inventory/scripts/runtime_snapshot.sh
+	bash scripts/runtime_snapshot.sh
 
 dirs:
 	@echo "==> 로컬 bind mount 디렉토리 생성"
@@ -94,7 +94,7 @@ dirs:
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/migrator
 	mkdir -p $(ARCHIVE_STORAGE_ROOT)/astro-blog/dist
 	mkdir -p docker/layer3-apps/nextcloud/html
-	mkdir -p inventory/raw
+	mkdir -p docs/raw
 
 system:
 	@echo "==> [Layer 0] 시스템 기초 설정"
@@ -192,7 +192,7 @@ logs:
 
 docs-host:
 	@echo "==> 현재 호스트 상태 수집"
-	bash inventory/scripts/collect_host_state.sh
+	bash scripts/collect_host_state.sh
 
 clean:
 	@echo "==> 모든 컨테이너 중단"

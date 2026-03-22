@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
-RAW_DIR="$ROOT_DIR/inventory/raw"
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+RAW_DIR="$ROOT_DIR/docs/raw"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 OUT_FILE="$RAW_DIR/runtime-snapshot-${TIMESTAMP}.txt"
 

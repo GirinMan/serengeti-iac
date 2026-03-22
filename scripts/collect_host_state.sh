@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-OUTPUT_DIR="${ROOT_DIR}/inventory/raw"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OUTPUT_DIR="${ROOT_DIR}/docs/raw"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 HOSTNAME_SHORT="$(hostname -s 2>/dev/null || echo unknown-host)"
 OUTPUT_FILE="${OUTPUT_DIR}/host-state-${HOSTNAME_SHORT}-${TIMESTAMP}.txt"
