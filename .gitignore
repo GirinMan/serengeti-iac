@@ -214,6 +214,12 @@ docker/layer3-apps/blog/content/
 docker/layer3-apps/nextcloud/html/
 docker/layer3-apps/backup/.cache/
 docs/manual/external-setup-template.md
+
+# Secret configuration files (keep in separate private repo)
+config/services.yml
+config/npm-hosts.yml
+config/*.secret.yml
+
 .cursorignore
 .cursorindexingignore
 

@@ -1,0 +1,50 @@
+# Template: Database Service
+#
+# Use case: Add a new database instance (PostgreSQL, MySQL, MongoDB, etc.)
+# Copy to docker/layer2-data/<db-name>/docker-compose.yml
+
+services:
+  __DB_NAME__:
+    image: __IMAGE__:__TAG__
+    container_name: __DB_NAME__
+    restart: unless-stopped
+    environment:
+      # Database-specific env vars
+      # PostgreSQL example:
+      POSTGRES_USER: ${__DB_NAME___USER}
+      POSTGRES_PASSWORD: ${__DB_NAME___PASSWORD}
+      POSTGRES_DB: ${__DB_NAME___DB}
+
+      # MySQL example:
+      # MYSQL_ROOT_PASSWORD: ${__DB_NAME___ROOT_PASSWORD}
+      # MYSQL_DATABASE: ${__DB_NAME___DB}
+      # MYSQL_USER: ${__DB_NAME___USER}
+      # MYSQL_PASSWORD: ${__DB_NAME___PASSWORD}
+
+      # MongoDB example:
+      # MONGO_INITDB_ROOT_USERNAME: ${__DB_NAME___USER}
+      # MONGO_INITDB_ROOT_PASSWORD: ${__DB_NAME___PASSWORD}
+
+    volumes:
+      # Use primary storage for databases (SSD)
+      - ${PRIMARY_STORAGE_ROOT}/__DB_NAME__:/var/lib/postgresql/data
+      # Or for MySQL: /var/lib/mysql
+      # Or for MongoDB: /data/db
+
+    networks:
+      - data-tier
+
+    healthcheck:
+      # PostgreSQL:
+      test: ["CMD-SHELL", "pg_isready -U ${__DB_NAME___USER}"]
+      # MySQL:
+      # test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      # MongoDB:
+      # test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  data-tier:
+    external: true

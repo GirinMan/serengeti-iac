@@ -50,6 +50,95 @@
   - `RabbitMQ` 는 `Plane` 용
   - `PostgreSQL` 는 `Nextcloud` + `Plane` 용
 
+## 유연한 서비스 구성 철학 (2026-03-22 추가)
+
+**핵심 원칙**: IaC 리포지토리는 인프라 코드와 템플릿만 포함하고, 실제 배포 정보(도메인 매핑, 민감한 설정)는 별도의 private 리포지토리로 분리한다.
+
+### 설정 분리 전략
+
+1. **Public IaC Repository** (이 리포지토리):
+   - Docker Compose 템플릿 (`docker/`)
+   - 시스템 설정 스크립트 (`system/`)
+   - 서비스 템플릿 (`config/templates/`)
+   - 예시 설정 파일 (`*.example.yml`, `.env.example`)
+   - 문서 및 가이드
+
+2. **Private Secret Repository** (별도 관리):
+   - `.env` (실제 환경 변수)
+   - `config/services.yml` (실제 서비스 설정)
+   - `config/npm-hosts.yml` (실제 NPM 호스트 매핑)
+   - Cloudflare Tunnel 설정
+   - 기타 민감한 배포 정보
+
+### 새 서비스 추가 워크플로우
+
+```bash
+# 1. IaC 리포지토리: Compose 파일 작성 (인프라 코드)
+mkdir -p docker/layer3-apps/myapp
+cat > docker/layer3-apps/myapp/docker-compose.yml <<'EOF'
+services:
+  myapp:
+    image: myapp:latest
+    container_name: myapp
+    networks:
+      - proxy-tier
+      - data-tier
+EOF
+
+# 2. Secret 리포지토리: 배포 설정 추가 (민감 정보)
+cat >> ../secrets/config/services.yml <<'EOF'
+services:
+  myapp:
+    type: app-single
+    compose_path: docker/layer3-apps/myapp/docker-compose.yml
+    dependencies: [npm, postgres]
+EOF
+
+cat >> ../secrets/config/npm-hosts.yml <<'EOF'
+npm_hosts:
+  myapp:
+    domain: "myapp.yourdomain.com"
+    forward_to: "myapp:8080"
+    ssl: true
+EOF
+
+# 3. 배포
+docker compose -f docker/layer3-apps/myapp/docker-compose.yml up -d
+./scripts/sync-npm-hosts.sh  # NPM에 자동 등록 (또는 수동)
+```
+
+**장점**:
+- IaC 리포지토리는 public으로 공개 가능 (도메인 정보 노출 없음)
+- 새 서비스 추가 시 IaC 코드 변경 최소화
+- NPM 설정을 선언적으로 관리 (YAML 파일)
+- 배포 환경별 설정 분리 (dev/staging/prod)
+
+### 관련 파일 구조
+
+```
+serengeti-iac/                    # Public IaC repo
+├── config/
+│   ├── README.md                 # 설정 관리 가이드
+│   ├── services.example.yml     # 서비스 설정 템플릿
+│   ├── npm-hosts.example.yml    # NPM 호스트 템플릿
+│   └── templates/               # 재사용 템플릿
+│       ├── static-site.yml
+│       ├── webapp.yml
+│       └── database.yml
+├── scripts/
+│   └── sync-npm-hosts.sh        # NPM 동기화 스크립트
+└── .gitignore                   # config/*.yml 제외
+
+my-homelab-secrets/               # Private secret repo
+├── .env                          # 실제 환경 변수
+├── config/
+│   ├── services.yml              # 실제 서비스 설정
+│   └── npm-hosts.yml             # 실제 NPM 호스트 매핑
+└── cloudflare-tunnel-config.yml
+```
+
+자세한 가이드는 `config/README.md` 참조.
+
 **저장장치 구성 (실제 시스템 기준)**:
 - **1TB SSD** = 메인 OS 드라이브 (루트 `/`, Ubuntu·Docker·NPM 등)
 - **500GB SSD** = 보조 저장소 (`/mnt/primary`, DB·캐시·덤프 등)
@@ -71,19 +160,206 @@
 1. [프로젝트 개요 및 네트워크 환경](#1-프로젝트-개요-및-네트워크-환경)
 2. [하드웨어 및 스토리지 전략](#2-하드웨어-및-스토리지-전략)
 3. [아키텍처 3계층 설계](#3-아키텍처-3계층-설계)
-4. [전체 디렉토리 구조](#4-전체-디렉토리-구조)
-5. [환경 변수 및 보안 설정](#5-환경-변수-및-보안-설정)
-6. [Layer 0: 시스템 기초 설정](#6-layer-0-시스템-기초-설정)
-7. [Layer 1: Network & Security](#7-layer-1-network--security)
-8. [Layer 2: Data Platform](#8-layer-2-data-platform)
-9. [Layer 3: Application](#9-layer-3-application)
-10. [백업 파이프라인](#10-백업-파이프라인)
-11. [Makefile 통합 관리](#11-makefile-통합-관리)
-12. [배포 실행 순서](#12-배포-실행-순서)
+4. [유연한 서비스 구성 및 Secret 분리](#4-유연한-서비스-구성-및-secret-분리)
+5. [전체 디렉토리 구조](#5-전체-디렉토리-구조)
+6. [환경 변수 및 보안 설정](#6-환경-변수-및-보안-설정)
+7. [Layer 0: 시스템 기초 설정](#7-layer-0-시스템-기초-설정)
+8. [Layer 1: Network & Security](#8-layer-1-network--security)
+9. [Layer 2: Data Platform](#9-layer-2-data-platform)
+10. [Layer 3: Application](#10-layer-3-application)
+11. [백업 파이프라인](#11-백업-파이프라인)
+12. [Makefile 통합 관리](#12-makefile-통합-관리)
+13. [배포 실행 순서](#13-배포-실행-순서)
 
 ---
 
-## 1. 프로젝트 개요 및 네트워크 환경
+## 4. 유연한 서비스 구성 및 Secret 분리
+
+### 4.1 설계 철학
+
+**문제**: 기존 IaC 프로젝트는 도메인 매핑, 실제 서비스 정보 등이 코드에 하드코딩되어 있어:
+- 새 서비스 추가 시 여러 파일 수정 필요
+- 민감한 정보(서브도메인, 기술 스택)가 리포지토리에 노출
+- 환경별(dev/prod) 설정 분리 어려움
+
+**해결책**: 인프라 코드와 배포 설정을 분리
+- **IaC Repo** (public 가능): Docker Compose 템플릿, 시스템 스크립트, 서비스 템플릿
+- **Secret Repo** (private): 실제 도메인, NPM 호스트 매핑, 환경 변수
+
+### 4.2 파일 구조
+
+#### IaC Repository (serengeti-iac)
+```
+├── config/
+│   ├── README.md                    # 설정 가이드
+│   ├── services.example.yml         # 서비스 설정 템플릿
+│   ├── npm-hosts.example.yml        # NPM 호스트 템플릿
+│   └── templates/                   # 재사용 템플릿
+│       ├── static-site.yml          # 정적 사이트 (Nginx)
+│       ├── webapp.yml               # 웹 앱 (DB 연동)
+│       └── database.yml             # 데이터베이스
+├── scripts/
+│   └── sync-npm-hosts.sh            # NPM 자동 설정 (미래)
+└── docker/
+    ├── layer2-data/                 # 데이터 플랫폼
+    └── layer3-apps/                 # 애플리케이션
+```
+
+#### Secret Repository (별도 private repo)
+```
+my-homelab-secrets/
+├── .env                             # 실제 환경 변수
+├── config/
+│   ├── services.yml                 # 실제 서비스 설정
+│   └── npm-hosts.yml                # 실제 NPM 호스트 매핑
+├── cloudflare/
+│   └── tunnel-config.yml
+└── README.md                        # 배포 가이드
+```
+
+### 4.3 새 서비스 추가 워크플로우
+
+#### 예: Grafana 모니터링 추가
+
+**Step 1**: IaC Repo에 Compose 파일 작성
+```bash
+# serengeti-iac/docker/layer3-apps/grafana/docker-compose.yml
+services:
+  grafana:
+    image: grafana/grafana:10.3.3
+    container_name: grafana
+    restart: unless-stopped
+    volumes:
+      - /mnt/primary/grafana:/var/lib/grafana
+    networks:
+      - proxy-tier
+      - data-tier
+```
+
+**Step 2**: Secret Repo에 배포 설정 추가
+```yaml
+# my-homelab-secrets/config/services.yml
+services:
+  grafana:
+    type: app-single
+    compose_path: docker/layer3-apps/grafana/docker-compose.yml
+    health_endpoint: "/api/health"
+    dependencies: [npm, postgres]
+```
+
+```yaml
+# my-homelab-secrets/config/npm-hosts.yml
+npm_hosts:
+  grafana:
+    domain: "grafana.yourdomain.com"
+    forward_to: "grafana:3000"
+    ssl: true
+    cache_assets: false
+```
+
+```bash
+# my-homelab-secrets/.env에 추가
+CF_GRAFANA_HOST=grafana.yourdomain.com
+```
+
+**Step 3**: 배포
+```bash
+cd serengeti-iac
+docker compose -f docker/layer3-apps/grafana/docker-compose.yml up -d
+
+# NPM에 수동 또는 자동 설정
+./scripts/sync-npm-hosts.sh  # 또는 NPM UI에서 수동 추가
+```
+
+**결과**: IaC 리포지토리에는 변경 없음. 모든 배포 정보는 secret repo에만 존재.
+
+### 4.4 NPM 자동 설정 (향후 구현)
+
+`scripts/sync-npm-hosts.sh` 스크립트:
+- `config/npm-hosts.yml` 읽기
+- NPM API를 통해 Proxy Host 자동 생성/업데이트
+- 현재는 dry-run 모드 (설정 출력만)
+
+```bash
+./scripts/sync-npm-hosts.sh
+# 출력: NPM에 추가할 호스트 목록
+```
+
+전체 구현 시:
+```bash
+./scripts/sync-npm-hosts.sh --apply
+# NPM API를 통해 실제 호스트 생성
+```
+
+### 4.5 서비스 템플릿 사용
+
+재사용 가능한 템플릿 제공:
+
+1. **Static Site** (`config/templates/static-site.yml`)
+   - Nginx 기반
+   - 정적 파일 서빙
+   - 예: Astro, Hugo, Jekyll
+
+2. **Web App** (`config/templates/webapp.yml`)
+   - DB 연동 (PostgreSQL)
+   - Redis 캐시
+   - 예: Node.js, Python, Ruby 앱
+
+3. **Database** (`config/templates/database.yml`)
+   - Layer 2 데이터 플랫폼
+   - Primary storage 사용
+   - 예: PostgreSQL, MySQL, MongoDB
+
+사용법:
+```bash
+cp config/templates/webapp.yml docker/layer3-apps/myapp/docker-compose.yml
+# __APP_NAME__, __IMAGE__ 등 플레이스홀더 치환
+```
+
+### 4.6 배포 환경 분리
+
+Secret repo에서 환경별 설정 관리:
+
+```
+my-homelab-secrets/
+├── dev/
+│   ├── .env
+│   └── config/
+├── staging/
+│   ├── .env
+│   └── config/
+└── prod/
+    ├── .env
+    └── config/
+```
+
+배포 시:
+```bash
+ln -s ../secrets/prod/.env .env
+ln -s ../secrets/prod/config config
+make bootstrap
+```
+
+### 4.7 보안 원칙
+
+**절대 IaC Repo에 커밋하지 말 것**:
+- `.env` (실제 환경 변수)
+- `config/services.yml` (실제 서비스 설정)
+- `config/npm-hosts.yml` (실제 호스트 매핑)
+- `*.secret.yml` (모든 secret 파일)
+
+**Secret Repo 관리**:
+- Private repository로 설정
+- 2FA 활성화
+- 접근 권한 최소화 (본인만)
+- 정기 백업 (암호화)
+- `.gitignore`에 로컬 런타임 파일 제외
+
+자세한 가이드: `config/README.md` 참조
+
+---
+
+## 5. 전체 디렉토리 구조
 
 ### 1.1 네트워크 토폴로지
 

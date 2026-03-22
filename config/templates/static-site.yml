@@ -1,0 +1,26 @@
+# Template: Static Site (Nginx-based)
+#
+# Use case: Static HTML/CSS/JS sites, Astro, Hugo, Jekyll, etc.
+# Copy to docker/layer3-apps/<app-name>/docker-compose.yml
+
+services:
+  __APP_NAME__:
+    image: nginx:1.25-alpine
+    container_name: __APP_NAME__
+    restart: unless-stopped
+    volumes:
+      # Mount static files
+      - ${ARCHIVE_STORAGE_ROOT}/__APP_NAME__/dist:/usr/share/nginx/html:ro
+      # Optional: custom nginx config
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - proxy-tier
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  proxy-tier:
+    external: true
