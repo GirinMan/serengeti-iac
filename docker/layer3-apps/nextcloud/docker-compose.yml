@@ -14,9 +14,12 @@ services:
       NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD}
       NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_TRUSTED_DOMAINS}
       OVERWRITEPROTOCOL: https
+      PHP_UPLOAD_LIMIT: 51200M
+      PHP_MEMORY_LIMIT: 3072M
     volumes:
       - ./html:/var/www/html
       - ${ARCHIVE_STORAGE_ROOT}/nextcloud:/var/www/html/data
+      - ./hooks/before-starting:/docker-entrypoint-hooks.d/before-starting
     networks:
       - proxy-tier
       - data-tier
