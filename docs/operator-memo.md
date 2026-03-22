@@ -4,15 +4,6 @@
 
 ## Human Input Still Needed
 
-1. **Nextcloud 권한 수정 (긴급)**
-   ```bash
-   sudo chown -R 33:33 /mnt/archive/nextcloud
-   docker restart nextcloud
-   ```
-   - 현재 Nextcloud 컨테이너가 unhealthy 상태
-   - 데이터 디렉토리 권한 문제 (www-data=uid:33 필요)
-   - 수정 후 healthcheck가 통과될 것으로 예상
-
 2. Cloudflare Tunnel 등록
    - 필요 값:
      - 실제 `CF_TUNNEL_TOKEN`
@@ -29,20 +20,25 @@
 
 ## Runtime Notes
 
-- **2026-03-22 현재 상태** (13:50 UTC):
-  - Layer 2 (Data): `postgres`, `neo4j`, `elasticsearch`, `redis`, `kafka`, `minio`, `rabbitmq` - 모두 healthy
+- **2026-03-22 현재 상태** (14:00 UTC):
+  - Layer 2 (Data): `postgres`, `neo4j`, `elasticsearch`, `redis`, `kafka`, `minio`, `rabbitmq` - 모두 healthy ✓
   - Layer 3 (Apps):
-    - `npm` - healthy
-    - `plane-*` (전체 스택) - healthy
-    - `nextcloud` - **unhealthy** (권한 문제, 사람 입력 필요)
-    - `wordpress-blog`, `mariadb` - **중단 완료** ✓
+    - `npm` - healthy ✓
+    - `plane-*` (전체 스택) - healthy ✓
+    - `nextcloud` - **healthy** ✓ (권한 문제 해결 완료)
+    - `wordpress-blog`, `mariadb` - 중단 완료 ✓
     - `astro-blog` - 아직 시작 안 함 (사전 준비 필요)
 - 처리 완료 메모:
   - Plane 이미지 pull 중 일부 blob가 Docker Hub IPv6 경로에서 끊겼지만 개별 pull 재시도로 회복했다.
   - `minio` 는 고정 태그로 재기동했고 `plane-uploads` 버킷까지 생성했다.
   - 2026-03-22 13:50 UTC:
     - WordPress → Astro 마이그레이션: 코드 완료, wordpress/mariadb 컨테이너 중단 완료
-    - Nextcloud unhealthy 원인 파악: `/mnt/archive/nextcloud` 권한 문제 (33:33 필요)
+    - Nextcloud unhealthy 원인 파악: 권한 문제
+  - 2026-03-22 14:00 UTC:
+    - **Nextcloud 복구 완료** ✓
+    - 실제 원인: `/var/www/html` 전체 (마운트된 ./html 디렉토리)가 www-data 소유 필요
+    - 해결: `docker exec nextcloud chown -R www-data:www-data /var/www/html`
+    - 데이터 디렉토리(`/mnt/archive/nextcloud`)도 33:33 적용 완료
 
 ## Architecture Notes
 
