@@ -213,6 +213,7 @@ docker/layer2-data/*/logs/
 docker/layer3-apps/blog/content/
 docker/layer3-apps/nextcloud/html/
 docker/layer3-apps/backup/.cache/
+docs/manual/external-setup-template.md
 .cursorignore
 .cursorindexingignore
 

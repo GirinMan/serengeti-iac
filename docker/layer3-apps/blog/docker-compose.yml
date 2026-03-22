@@ -1,33 +1,19 @@
 services:
-  wordpress:
-    image: wordpress:${WORDPRESS_VERSION}
-    container_name: wordpress-blog
+  astro-blog:
+    image: nginx:1.25-alpine
+    container_name: astro-blog
     restart: unless-stopped
-    environment:
-      WORDPRESS_DB_HOST: mariadb:3306
-      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
-      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
-      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
-      WORDPRESS_CONFIG_EXTRA: |
-        define('WP_HOME', 'https://${CF_BLOG_HOST}');
-        define('WP_SITEURL', 'https://${CF_BLOG_HOST}');
-        define('FORCE_SSL_ADMIN', true);
-        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
-          $$_SERVER['HTTPS'] = 'on';
-        }
     volumes:
-      - ${ARCHIVE_STORAGE_ROOT}/wordpress/html:/var/www/html
+      - ${ARCHIVE_STORAGE_ROOT}/astro-blog/dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - proxy-tier
-      - data-tier
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1/wp-json/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 3
 
 networks:
   proxy-tier:
-    external: true
-  data-tier:
     external: true

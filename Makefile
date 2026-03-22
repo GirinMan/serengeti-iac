@@ -57,7 +57,6 @@ validate: check-env
 		echo "==> Docker Compose 설정 확인"; \
 		$(COMPOSE) -f docker/layer1-ops/npm/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/postgres/docker-compose.yml config >/dev/null; \
-		$(COMPOSE) -f docker/layer2-data/mariadb/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/neo4j/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/elasticsearch/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/redis/docker-compose.yml config >/dev/null; \
@@ -88,13 +87,12 @@ dirs:
 	@echo "==> 로컬 bind mount 디렉토리 생성"
 	mkdir -p docker/layer1-ops/npm/data
 	mkdir -p docker/layer1-ops/npm/letsencrypt
-	mkdir -p $(PRIMARY_STORAGE_ROOT)/mariadb
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/rabbitmq
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/api
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/worker
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/beat
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/migrator
-	mkdir -p $(ARCHIVE_STORAGE_ROOT)/wordpress/html
+	mkdir -p $(ARCHIVE_STORAGE_ROOT)/astro-blog/dist
 	mkdir -p docker/layer3-apps/nextcloud/html
 	mkdir -p inventory/raw
 
@@ -135,7 +133,6 @@ ops: check-env network dirs
 data: check-env network
 	@echo "==> [Layer 2] 데이터 플랫폼 실행"
 	$(COMPOSE) -f docker/layer2-data/postgres/docker-compose.yml up -d
-	$(COMPOSE) -f docker/layer2-data/mariadb/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer2-data/neo4j/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer2-data/elasticsearch/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer2-data/redis/docker-compose.yml up -d
@@ -209,6 +206,5 @@ clean:
 	-$(COMPOSE) -f docker/layer2-data/redis/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/elasticsearch/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/neo4j/docker-compose.yml down --remove-orphans
-	-$(COMPOSE) -f docker/layer2-data/mariadb/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/postgres/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer1-ops/npm/docker-compose.yml down --remove-orphans

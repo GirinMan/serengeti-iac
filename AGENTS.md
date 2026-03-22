@@ -4,10 +4,11 @@
 **대상 환경**: 우영하우스 403호, Ubuntu Server 24.04 LTS (<server_private_ip>)  
 **목적**: 오프라인 코딩 에이전트가 검색 없이 바로 구현 가능한 수준의 상세 기술 문서
 
-**2026-03-10 런타임 설계 갱신 메모**:
-- 기본 블로그 서비스는 `Ghost` 가 아니라 `WordPress` 로 운영한다.
+**2026-03-22 런타임 설계 갱신 메모**:
+- 기본 블로그 서비스는 `Astro` 정적 사이트 생성기로 운영한다.
 - task 관리 애플리케이션으로 `Plane` 을 추가한다.
-- 위 변경에 따라 인프라 레이어에는 `MariaDB` 와 `RabbitMQ` 가 추가된다.
+- 위 변경에 따라 인프라 레이어에는 `RabbitMQ` 가 추가된다.
+- Astro는 정적 파일만 생성하므로 데이터베이스가 필요 없다 (nginx로 서빙).
 - 하단의 일부 상세 예시는 아직 이전 설계를 포함할 수 있으므로, 실제 적용 우선순위는 현재 compose 파일과 진행 로그를 따른다.
 
 ## 운영 규칙
@@ -42,12 +43,12 @@
 ## 현재 우선 아키텍처
 
 - Layer 3 기본 앱:
-  - `WordPress` 블로그
+  - `Astro` 블로그 (정적 사이트, nginx로 서빙)
   - `Nextcloud` NAS
   - `Plane` task 관리
 - Layer 2 추가 인프라:
-  - `MariaDB` 는 `WordPress` 용
   - `RabbitMQ` 는 `Plane` 용
+  - `PostgreSQL` 는 `Nextcloud` + `Plane` 용
 
 **저장장치 구성 (실제 시스템 기준)**:
 - **1TB SSD** = 메인 OS 드라이브 (루트 `/`, Ubuntu·Docker·NPM 등)
@@ -110,7 +111,7 @@ External Network (Internet)
 - **도메인**: `<public_domain>`
 - **네임서버**: Cloudflare로 위임
 - **서브도메인 라우팅**:
-  - `<blog_subdomain>` → WordPress 블로그
+  - `<blog_subdomain>` → Astro 블로그 (정적 사이트)
   - `<nas_subdomain>` → Nextcloud
   - `<api_subdomain>` → Custom API
   - `<tasks_subdomain>` → Plane
@@ -189,7 +190,7 @@ External Network (Internet)
 - Minio (S3-compatible Object Storage)
 
 ### Layer 3: Application
-- WordPress (블로그)
+- Astro (정적 블로그, nginx로 서빙)
 - Nextcloud (NAS)
 - Plane (Task Management)
 - Custom API 서비스
@@ -200,7 +201,7 @@ External Network (Internet)
 ```
 proxy-tier (bridge):
   - NPM (<npm_http_port>, <npm_https_port> 포트 호스트에 노출)
-  - WordPress, Nextcloud, Plane, Custom API (포트 비노출, 컨테이너명으로 NPM에 연결)
+  - Astro (nginx), Nextcloud, Plane, Custom API (포트 비노출, 컨테이너명으로 NPM에 연결)
 
 data-tier (bridge):
   - PostgreSQL, Neo4j, Elasticsearch, Redis, Kafka, Minio
@@ -242,8 +243,6 @@ data-tier (bridge):
     │
     ├── layer2-data/                  # Layer 2: Data Platform
     │   ├── postgres/
-    │   │   └── docker-compose.yml
-    │   ├── mariadb/
     │   │   └── docker-compose.yml
     │   ├── neo4j/
     │   │   └── docker-compose.yml
@@ -963,40 +962,41 @@ networks:
 
 ## 9. Layer 3: Application
 
-### 9.1 `docker/layer3-apps/blog/docker-compose.yml` (WordPress)
+### 9.1 `docker/layer3-apps/blog/docker-compose.yml` (Astro)
 
 ```yaml
 services:
-  wordpress:
-    image: wordpress:${WORDPRESS_VERSION}
-    container_name: wordpress-blog
+  astro-blog:
+    image: nginx:1.25-alpine
+    container_name: astro-blog
     restart: unless-stopped
-    environment:
-      WORDPRESS_DB_HOST: mariadb:3306
-      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
-      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
-      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
     volumes:
-      - /mnt/archive/wordpress/html:/var/www/html
+      - ${ARCHIVE_STORAGE_ROOT}/astro-blog/dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - proxy-tier
-      - data-tier
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1/wp-json/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 3
 
 networks:
   proxy-tier:
     external: true
-  data-tier:
-    external: true
+```
+
+**빌드 및 배포**:
+Astro 프로젝트는 `docker/layer3-apps/blog/src/`에서 관리하며, 빌드 스크립트(`build.sh`)로 정적 파일을 생성하여 `/mnt/archive/astro-blog/dist`에 배포합니다.
+
+```bash
+cd docker/layer3-apps/blog
+bash build.sh  # npm run build → dist 배포 → nginx 재시작
 ```
 
 **NPM 프록시 설정**:
 - Domain: `<blog_subdomain>`
-- Forward to: `wordpress-blog:80`
+- Forward to: `astro-blog:80`
 - SSL: Let's Encrypt 자동 발급
 
 ### 9.2 `docker/layer3-apps/nextcloud/docker-compose.yml`
@@ -1412,12 +1412,12 @@ make app name=blog
 
 1. NPM Admin UI 접속: `http://<server_private_ip>:<npm_admin_port>`
 2. Proxy Hosts → Add Proxy Host
-3. 예시 (WordPress 블로그):
+3. 예시 (Astro 블로그):
    - **Domain Names**: `<blog_subdomain>`
    - **Scheme**: `http`
-   - **Forward Hostname / IP**: `wordpress-blog`
+   - **Forward Hostname / IP**: `astro-blog`
    - **Forward Port**: `80`
-   - **Cache Assets**: ✓
+   - **Cache Assets**: ✓ (정적 사이트이므로 매우 효과적)
    - **Block Common Exploits**: ✓
    - **SSL 탭**: Request a new SSL Certificate (Let's Encrypt)
 
