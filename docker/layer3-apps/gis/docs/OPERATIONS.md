@@ -3,6 +3,11 @@
 이 문서는 GIS 지하시설물 관리 시스템의 일상 운영 절차를 다룹니다.
 초기 배포 절차는 `README.md`를 참고하세요.
 
+> **환경변수 사전 설정**: 이 문서의 명령어는 `$REDIS_PASSWORD`, `$ELASTIC_PASSWORD` 등 환경변수를 사용합니다. 호스트 셸에서 실행하기 전에 다음을 실행하세요:
+> ```bash
+> source docker/layer3-apps/gis/.env
+> ```
+
 ## 1. 새 지역 데이터 임포트
 
 ### 1.1 Shapefile 데이터 (권장: API 업로드)
@@ -170,12 +175,6 @@ docker exec elasticsearch curl -sf -u "elastic:$ELASTIC_PASSWORD" \
 ## 4. Redis 캐시 관리
 
 GIS API는 Redis DB 1에 레이어 메타데이터를 캐시합니다.
-
-> **환경변수 참고**: 아래 명령어의 `$REDIS_PASSWORD`, `$ELASTIC_PASSWORD` 등은 GIS `.env` 파일에 정의되어 있습니다.
-> 명령어 실행 전 환경변수를 로드하세요:
-> ```bash
-> source docker/layer3-apps/gis/.env
-> ```
 
 ```bash
 # 특정 지역 캐시 클리어

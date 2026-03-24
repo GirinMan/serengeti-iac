@@ -1016,4 +1016,37 @@
 ### 다음 루프 TODO
 - [ ] Loop 19 커밋 push 및 CI 정상 동작 확인 (OPERATIONS.md 환경변수 안내 추가, HISTORY.md)
 - [ ] CI run #23483939965 e2e-test 최종 결과 확인 (51/51 PASS 예상)
-- [ ] OPERATIONS.md §2 레이어 추가/수정 섹션의 Redis 명령어에도 동일한 `.env` sourcing 안내 필요 여부 검토 (§4에서 이미 안내했으므로 중복 여부 판단)
+- [x] OPERATIONS.md §2 레이어 추가/수정 섹션의 Redis 명령어에도 동일한 `.env` sourcing 안내 필요 여부 검토 → Loop 20
+
+---
+
+## Loop 20 (2026-03-24)
+
+### 작업 전: 목표
+- Loop 19에서 이월된 TODO 수행:
+  1. Loop 19 커밋 push 및 CI 정상 동작 확인 (OPERATIONS.md 환경변수 안내 추가, HISTORY.md)
+  2. CI run #23483939965 e2e-test 최종 결과 확인 (51/51 PASS 예상)
+  3. OPERATIONS.md §2 레이어 추가/수정 섹션의 Redis 명령어에도 동일한 `.env` sourcing 안내 필요 여부 검토
+
+### 작업 중: 주요 문제 및 의사결정
+
+#### 1. Loop 19 커밋 push 및 CI 검증
+- Loop 19의 미커밋 변경사항(OPERATIONS.md `.env` sourcing 안내 + HISTORY.md Loop 19 기록) 확인
+- 커밋(`7be120a`) 생성 및 push 완료
+- CI run #23483939965 (Loop 18 커밋 기준): **10/10 jobs 전체 SUCCESS** (e2e-test 51/51 PASS 확인)
+
+#### 2. OPERATIONS.md 환경변수 안내 구조 개선
+- **문제**: §4(Redis 캐시 관리)에만 `.env` sourcing 안내가 있었으나, §2.3(레이어 스타일 변경)에서 먼저 `$REDIS_PASSWORD`를 사용 → 문서를 순서대로 읽는 독자가 놓칠 수 있음
+- **의사결정**: §4의 중복 안내를 제거하고, 문서 최상단(§1 전)에 공통 "환경변수 사전 설정" 블록으로 이동
+  - `source docker/layer3-apps/gis/.env` 명령어를 문서 도입부에 1회만 안내
+  - 모든 섹션(§2, §4, §6 트러블슈팅)의 명령어가 동일한 사전 설정을 참조
+- `$REDIS_PASSWORD` 사용 위치: §2.3(라인 135), §4(라인 182~188), §6(라인 261~262) — 총 3개 섹션에서 사용
+
+### 작업 후: 완료 내용
+- [x] Loop 19 커밋(`7be120a`) push 완료
+- [x] CI run #23483939965 전체 10/10 SUCCESS 확인 (e2e-test 51/51 PASS)
+- [x] OPERATIONS.md 환경변수 안내를 문서 최상단으로 이동 (§4 중복 안내 제거)
+
+### 다음 루프 TODO
+- [ ] Loop 20 커밋 push 및 CI 정상 동작 확인
+- [ ] PROMPT.md의 원래 목표(좌표 틀어짐 현상 분석 및 수정)가 Loop 1~20을 통해 완전히 해결되었으므로, 이 작업 시퀀스의 최종 마무리 여부 결정
