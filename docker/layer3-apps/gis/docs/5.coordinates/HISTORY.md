@@ -740,3 +740,89 @@
 - [ ] PR #3 리뷰 및 main 머지 (머지 전략: squash vs merge commit 결정)
 - [ ] 머지 후 main 브랜치에서 CI 정상 동작 확인
 - [ ] 로컬 E2E 테스트 60/60 재검증 (Node.js 24 환경 변경 영향 확인)
+
+---
+
+## Loop 14 (2026-03-24)
+
+### 작업 전: 목표
+- Loop 13에서 이월된 TODO 수행:
+  1. PR #3 리뷰 및 main 머지 (머지 전략: squash vs merge commit 결정)
+  2. 머지 후 main 브랜치에서 CI 정상 동작 확인
+  3. 로컬 E2E 테스트 60/60 재검증 (Node.js 24 환경 변경 영향 확인)
+
+### 작업 중: 주요 문제 및 의사결정
+
+#### 1. 로컬 E2E 테스트 재검증
+- 로컬 환경에서 전체 60개 테스트 실행: **60/60 전체 PASS** (1.6분 소요)
+- Node.js 24 환경 변경(`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`)이 로컬 테스트에 영향 없음 확인
+
+#### 2. PR #3 머지 전략 결정 — merge commit 채택
+- feat/gis-app 브랜치: 37개 커밋 (IaC 기반 24개 + GIS 관련 13개)
+- **squash merge 불채택 이유**: 각 커밋이 이미 의미 있는 단위(feat, fix, refactor, docs)로 나뉘어 있음 — 37개를 1개로 합치면 이력 보존 가치 상실
+- **merge commit 채택**: 전체 커밋 이력 보존, 브랜치 합류 지점 명확
+
+#### 3. PR #3 CI 검증 및 머지
+- PR #3 상태: OPEN, MERGEABLE
+- feat/gis-app CI run #23482497161: **10/10 jobs 전체 SUCCESS** (e2e-test 51/51 PASS)
+- `gh pr merge 3 --merge` 실행 → 2026-03-24T09:37:19Z 머지 완료
+
+#### 4. main 브랜치 CI 검증
+- 머지 후 main에서 CI run #23482715009 자동 트리거
+- 9개 job(api-check, web-build, worker-check, shell-check, sql-check, compose-validate, docker-build×3) 먼저 성공
+- e2e-test job 약 5분 후 완료 → **10/10 jobs 전체 SUCCESS**
+
+### 작업 후: 완료 내용
+- [x] 로컬 E2E 테스트 60/60 전체 PASS 확인 (Node.js 24 환경 변경 영향 없음)
+- [x] PR #3 머지 전략 결정: merge commit (37개 커밋 이력 보존)
+- [x] PR #3 (feat/gis-app → main) 머지 완료
+- [x] feat/gis-app CI 10/10 SUCCESS 확인 후 머지
+- [x] main 브랜치 CI run #23482715009 전체 10/10 SUCCESS 확인
+
+### 다음 루프 TODO
+- [ ] feat/gis-app 브랜치 정리 (원격 삭제 여부 결정)
+- [ ] 로컬 워킹 브랜치를 main으로 전환 및 동기화
+- [ ] 미커밋 로컬 변경사항(.env.example, Makefile, postgres docker-compose.yml, toggle-gui.sh) 정리 및 커밋
+
+---
+
+## Loop 15 (2026-03-24)
+
+### 작업 전: 목표
+- Loop 14에서 이월된 TODO 수행:
+  1. feat/gis-app 브랜치 정리 (원격 삭제 여부 결정)
+  2. 로컬 워킹 브랜치를 main으로 전환 및 동기화
+  3. 미커밋 로컬 변경사항(.env.example, Makefile, postgres docker-compose.yml, toggle-gui.sh) 정리 및 커밋
+
+### 작업 중: 주요 문제 및 의사결정
+
+#### 1. 로컬 워킹 브랜치를 main으로 전환
+- `feat/gis-app` 브랜치에 미커밋 변경 4파일 + untracked 1파일 존재
+- `git stash` → `git checkout main` → `git pull origin main` (38 commits fast-forward) → `git stash pop`
+- 충돌 없이 main 브랜치에서 모든 변경사항 정상 적용
+
+#### 2. 미커밋 로컬 변경사항 커밋 (2개 커밋 분리)
+- **커밋 1** (`feat: integrate GIS service into root IaC`):
+  - `.env.example`: GIS 환경변수 추가 (DB, JWT, MinIO, Kafka, CF_GIS_HOST)
+  - `Makefile`: `make gis`, `gis-init`, `gis-migrate`, `gis-status` 타겟 추가, validate/clean에 GIS 포함
+  - `postgres/docker-compose.yml`: `postgres:16-alpine` → `postgis/postgis:16-3.4-alpine` (PostGIS 확장 포함)
+- **커밋 2** (`feat: add toggle-gui.sh script`):
+  - GPU VRAM 확보를 위한 headless/GUI 모드 토글 스크립트
+  - GIS와 무관한 시스템 유틸리티이므로 별도 커밋
+
+#### 3. feat/gis-app 브랜치 정리
+- PR #3으로 main에 이미 머지된 상태 → 삭제 안전
+- `git push origin --delete feat/gis-app`: 원격 브랜치 삭제
+- `git branch -d feat/gis-app`: 로컬 브랜치 삭제
+- `feat/initial-commit`, `feat/add-user-cli` 브랜치는 별도 용도이므로 유지
+
+### 작업 후: 완료 내용
+- [x] 로컬 워킹 브랜치를 `feat/gis-app` → `main`으로 전환 및 동기화 (38 commits fast-forward)
+- [x] GIS IaC 통합 커밋 (.env.example, Makefile, postgres docker-compose.yml)
+- [x] toggle-gui.sh 스크립트 커밋
+- [x] `feat/gis-app` 원격 + 로컬 브랜치 삭제
+
+### 다음 루프 TODO
+- [ ] main 브랜치에 Loop 15 커밋 push 및 CI 정상 동작 확인
+- [ ] PostGIS 이미지 변경(`postgis/postgis:16-3.4-alpine`)이 기존 postgres 컨테이너에 미치는 영향 검토 (Nextcloud, Plane DB 호환성)
+- [ ] `feat/initial-commit`, `feat/add-user-cli` 브랜치 정리 여부 결정
