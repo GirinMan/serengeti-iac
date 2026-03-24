@@ -30,12 +30,21 @@ curl -s "https://gis.example.com/api/v1/import/status/{import_id}" \
 ### 1.2 Shapefile 데이터 (수동 SQL 마이그레이션)
 
 ```bash
-# 1. Shapefile을 staging 테이블로 로드
-docker exec -i postgres shp2pgsql -s 5181 /path/to/data.shp staging.parcels_raw | \
-  docker exec -i postgres psql -U postgres -d gisdb
+# 1. 호스트에서 Shapefile을 컨테이너 내부로 복사
+docker cp ./data.shp postgres:/tmp/data.shp
+docker cp ./data.shx postgres:/tmp/data.shx
+docker cp ./data.dbf postgres:/tmp/data.dbf
+docker cp ./data.prj postgres:/tmp/data.prj
 
-# 2. 좌표 변환 + gis 스키마로 이동
-docker exec -i postgres psql -U postgres -d gisdb -c "
+# 2. 컨테이너 내부에서 shp2pgsql + psql 파이프라인 실행
+#    -s 5181: 원본 좌표계(Korea 2000 / Modified Central)
+#    -W CP949: 한글 인코딩
+#    -c: 테이블 생성 (기존 테이블 대체 시 -d)
+docker exec postgres sh -c \
+  "shp2pgsql -s 5181 -W CP949 -c /tmp/data.shp staging.parcels_raw | psql -U postgres -d gisdb -q"
+
+# 3. 좌표 변환 + gis 스키마로 이동
+docker exec postgres psql -U postgres -d gisdb -c "
   INSERT INTO gis.parcels (region_id, jibun, geom, properties)
   SELECT 1, pnu, ST_Transform(geom, 4326), row_to_json(t)::jsonb
   FROM staging.parcels_raw t;
@@ -147,8 +156,8 @@ bash docker/layer3-apps/gis/migration/10_setup_elasticsearch.sh
 docker exec elasticsearch curl -sf -u "elastic:$ELASTIC_PASSWORD" \
   'http://localhost:9200/gis-address/_search?q=address:포천'
 
-# API를 통해
-curl 'https://gis.example.com/api/v1/search/address?q=포천&region=POCHEON'
+# API를 통해 (한글은 URL 인코딩 필요: 포천 = %ED%8F%AC%EC%B2%9C)
+curl 'http://localhost:18080/api/v1/search/address?q=%ED%8F%AC%EC%B2%9C&region=POCHEON'
 ```
 
 ### 3.3 인덱스 상태 확인
@@ -209,13 +218,18 @@ npx playwright test --grep-invert="@nginx"
 
 ### 타일이 로드되지 않음
 ```bash
-# pg_tileserv 상태 확인
+# pg_tileserv 로그 확인
 docker logs pg-tileserv --tail 20
-curl http://localhost:7800/  # function layer 목록
 
-# 특정 타일 요청 테스트
+# pg_tileserv function layer 목록 (Docker 네트워크 경유, 호스트 포트 미노출)
+docker exec gis-web curl -sf http://pg-tileserv:7800/ | python3 -m json.tool
+
+# 특정 타일 요청 테스트 (nginx 프록시 경유)
 curl -o /dev/null -w "%{http_code}" \
-  "http://localhost:7800/gis.parcels_by_region/16/55924/25302.pbf"
+  "http://localhost:18080/tiles/gis.parcels_by_region/16/55924/25302.pbf"
+# 또는 Docker 네트워크 내부에서 직접
+docker exec gis-web curl -sf -o /dev/null -w "%{http_code}" \
+  "http://pg-tileserv:7800/gis.parcels_by_region/16/55924/25302.pbf"
 ```
 
 ### 검색이 동작하지 않음

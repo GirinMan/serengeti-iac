@@ -927,4 +927,48 @@
 
 ### 작업 중: 주요 문제 및 의사결정
 
-(작업 진행 중...)
+#### 1. Loop 17 커밋 push 및 CI 검증
+- Loop 17 미커밋 파일 4개(SUMMARY.md, OPERATIONS.md, Makefile, HISTORY.md) 커밋 및 push
+- CI run #23483652447: **10/10 jobs 전체 SUCCESS** (e2e-test 51/51 PASS)
+
+#### 2. OPERATIONS.md 실제 환경 검증 — 2건 수정
+
+##### 2a. pg_tileserv 트러블슈팅 명령어 수정
+- **문제**: OPERATIONS.md에서 `curl http://localhost:7800/`로 pg_tileserv 직접 접근 안내 → 실제로는 호스트 포트 미노출 (Docker 네트워크 내부만 접근 가능)
+- **수정**: `docker exec gis-web curl http://pg-tileserv:7800/` (Docker 네트워크 경유) 또는 `curl http://localhost:18080/tiles/...` (nginx 프록시 경유)로 변경
+
+##### 2b. 수동 shp2pgsql 임포트 절차 수정
+- **문제**: OPERATIONS.md에서 `docker exec -i postgres shp2pgsql /path/to/data.shp ... | docker exec -i postgres psql ...` 형태 안내 → 파일이 호스트에 있으면 컨테이너 내부에서 접근 불가
+- **수정**: 실제 `migrate-legacy.sh`의 패턴에 맞춰 3단계로 변경
+  1. `docker cp`로 호스트 → 컨테이너 파일 복사
+  2. `docker exec ... sh -c "shp2pgsql ... | psql ..."`로 컨테이너 내부 파이프라인 실행
+  3. `-W CP949` 한글 인코딩 옵션 추가
+
+##### 2c. ES 검색 API URL 수정
+- **문제**: `curl 'https://gis.example.com/api/...'`에서 한글 쿼리 직접 사용 → nginx가 400 Bad Request 반환
+- **수정**: URL 인코딩 필수 안내 (`포천` → `%ED%8F%AC%EC%B2%9C`), localhost:18080 로컬 접근 패턴으로 변경
+
+##### 2d. 검증 통과 명령어
+- DB 레이어 조회 (`SELECT code, visible, tile_url FROM gis.layers`): 정상
+- Redis 캐시 키 목록 (`KEYS layers:*`): `layers:all`, `layers:POCHEON` 정상
+- ES 인덱스 카운트 (`_count`): 263,463건 정상
+- ES 클러스터 헬스: green 정상
+- 타일 요청 (nginx 프록시 경유): 200 OK, 81KB 정상
+
+#### 3. README.md에 문서 참조 섹션 추가
+- 디렉토리 구조 섹션 앞에 **문서** 테이블 추가
+  - 운영 가이드 (OPERATIONS.md)
+  - 좌표 분석 요약 (SUMMARY.md)
+  - 좌표 분석 이력 (HISTORY.md)
+
+### 작업 후: 완료 내용
+- [x] Loop 17 커밋 push 및 CI run #23483652447 전체 10/10 SUCCESS 확인
+- [x] OPERATIONS.md 트러블슈팅 섹션: pg_tileserv 접근 방법 수정 (Docker 네트워크/nginx 프록시)
+- [x] OPERATIONS.md 수동 임포트 절차: docker cp + 컨테이너 내부 파이프라인으로 수정
+- [x] OPERATIONS.md 검색 API URL: URL 인코딩 안내 + localhost 패턴으로 수정
+- [x] README.md에 문서 참조 섹션 추가 (OPERATIONS.md, SUMMARY.md, HISTORY.md)
+
+### 다음 루프 TODO
+- [ ] Loop 18 커밋 push 및 CI 정상 동작 확인
+- [ ] OPERATIONS.md의 Redis 캐시 명령어에서 `$REDIS_PASSWORD` 환경변수 참조 검증 (`.env` 파일 sourcing 필요 여부 명시)
+- [ ] E2E 테스트에서 ES 인덱스 263,463건과 Loop 10 재인덱싱 255,568건 간 차이 원인 조사

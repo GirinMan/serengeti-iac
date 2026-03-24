@@ -182,6 +182,14 @@ npm run dev   # http://localhost:5173
 
 Vite dev 서버가 `/api` → `localhost:8000`, `/tiles` → `localhost:7800`으로 프록시합니다.
 
+## 문서
+
+| 문서 | 설명 |
+|------|------|
+| [운영 가이드](docs/OPERATIONS.md) | 일상 운영: 데이터 임포트, 레이어 관리, ES 인덱싱, 트러블슈팅 |
+| [좌표 분석 요약](docs/5.coordinates/SUMMARY.md) | Loop 1~16 좌표 분석 및 GIS 앱 개선 전체 요약 |
+| [좌표 분석 이력](docs/5.coordinates/HISTORY.md) | 좌표 틀어짐 분석/수정 상세 작업 이력 |
+
 ## 디렉토리 구조
 
 ```
