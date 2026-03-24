@@ -705,4 +705,38 @@
   3. api-proxy 테스트를 CI에서도 실행 가능하도록 gis-api 포트 직접 테스트 방식으로 개선 검토
 
 ### 작업 중: 주요 문제 및 의사결정
-(진행 중...)
+
+#### 1. CI Node.js 20 deprecation 경고 해결
+- **증상**: 모든 CI job에서 `Node.js 20 actions are deprecated` 경고 발생
+  - 대상 액션: `actions/checkout@v4`, `actions/setup-node@v4`, `actions/setup-python@v5`
+  - 기한: 2026년 6월 2일부터 Node.js 24 강제 적용 예정
+- **해결 방법 조사**: Perplexity 검색 결과 `actions/checkout@v5`는 존재하지 않음
+  - 권장 방법: `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` 환경변수 설정
+- **수정**: `gis-ci.yml`의 글로벌 `env` 블록에 `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` 추가
+- **결과**: CI run #23482236705에서 Node.js 20 deprecation 경고 완전 제거 확인
+
+#### 2. api-proxy 테스트 CI 실행 가능성 분석 — 현재 방식 유지
+- `api-proxy.spec.ts` 7개 테스트는 nginx 리버스 프록시 라우팅을 검증:
+  - `/api/*` → gis-api, `/tiles/*` → pg-tileserv, `/features/*` → pg-featureserv, SPA fallback
+- CI에서는 nginx, pg-tileserv, pg-featureserv가 없어 본질적으로 실행 불가
+- API 기능 자체는 search/auth/map E2E 테스트(51건)에서 이미 간접 검증
+- **결론**: `@nginx` 태그 기반 CI 스킵이 최적 — 추가 개선 불필요
+
+#### 3. feat/gis-app PR 생성
+- `feat/gis-app` 브랜치: main 대비 37개 커밋, 274파일, 47,218줄 추가
+- PR #3 생성: https://github.com/GirinMan/serengeti-iac/pull/3
+- CI run #23482236705: **10/10 jobs 전체 SUCCESS** (Node.js 24 환경)
+  - e2e-test: 51/51 PASS (약 5분 소요)
+  - docker-build: gis-api, gis-web, gis-worker 3개 모두 빌드 성공
+
+### 작업 후: 완료 내용
+- [x] `gis-ci.yml`에 `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` 추가하여 Node.js 20 deprecation 경고 제거
+- [x] CI run #23482236705 전체 SUCCESS 확인 (Node.js 24 환경, 경고 0건)
+- [x] api-proxy 테스트 CI 실행 가능성 분석 완료 → nginx 의존성으로 `@nginx` 태그 스킵 유지
+- [x] PR #3 생성 (feat/gis-app → main, 37 commits, 274 files)
+- [x] Loop 12 미커밋 HISTORY.md 내용 함께 커밋
+
+### 다음 루프 TODO
+- [ ] PR #3 리뷰 및 main 머지 (머지 전략: squash vs merge commit 결정)
+- [ ] 머지 후 main 브랜치에서 CI 정상 동작 확인
+- [ ] 로컬 E2E 테스트 60/60 재검증 (Node.js 24 환경 변경 영향 확인)
