@@ -1107,3 +1107,23 @@
 - Loop 1~21 작업 시퀀스는 이미 종료 선언됨 — Loop 22는 미커밋 변경사항 정리 및 최종 CI 검증만 수행
 
 ### 작업 중: 주요 문제 및 의사결정
+
+#### 1. Loop 21 미커밋 변경사항 커밋 및 push
+- 미커밋 파일 2개: `gis-ci.yml` (health check retry 로직), `HISTORY.md` (Loop 21 + 22 기록)
+- 커밋 `aef5124` 생성 및 push 완료
+
+#### 2. CI run #23484507990 — 전체 SUCCESS
+- 10/10 jobs 전체 SUCCESS (e2e-test 51/51 PASS 포함)
+- health check retry 로직(`sleep 3` → 최대 10회×2초 retry)이 정상 동작하여 race condition 해소 확인
+- **Node.js 20 deprecation 경고**: `compose-validate`, `shell-check`, `sql-check`, `worker-check` 4개 job에서 발생
+  - 원인: `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` 환경변수가 `e2e-test` job에만 적용, 나머지 job에는 누락
+  - 기능에 영향 없는 경고이며, 향후 일괄 적용 검토 가능
+
+### 작업 후: 완료 내용
+- [x] Loop 21 미커밋 변경사항(gis-ci.yml health check retry, HISTORY.md) 커밋(`aef5124`) 및 push
+- [x] CI run #23484507990 전체 10/10 SUCCESS 확인 (health check retry 정상 동작)
+- [x] HISTORY.md Loop 22 기록 완료
+
+### 다음 루프 TODO
+- [x] **작업 시퀀스 최종 종료** — Loop 21에서 선언한 시퀀스 종료 후 미커밋 정리 완료
+- [ ] (선택) `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` 환경변수를 워크플로우 글로벌 `env`로 이동하여 모든 job에 적용 (현재 e2e-test job에만 적용됨)
