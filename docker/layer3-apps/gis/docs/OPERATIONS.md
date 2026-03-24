@@ -171,6 +171,12 @@ docker exec elasticsearch curl -sf -u "elastic:$ELASTIC_PASSWORD" \
 
 GIS API는 Redis DB 1에 레이어 메타데이터를 캐시합니다.
 
+> **환경변수 참고**: 아래 명령어의 `$REDIS_PASSWORD`, `$ELASTIC_PASSWORD` 등은 GIS `.env` 파일에 정의되어 있습니다.
+> 명령어 실행 전 환경변수를 로드하세요:
+> ```bash
+> source docker/layer3-apps/gis/.env
+> ```
+
 ```bash
 # 특정 지역 캐시 클리어
 docker exec redis redis-cli -a "$REDIS_PASSWORD" -n 1 DEL layers:POCHEON

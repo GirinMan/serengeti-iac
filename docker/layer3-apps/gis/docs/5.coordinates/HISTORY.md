@@ -972,3 +972,48 @@
 - [ ] Loop 18 커밋 push 및 CI 정상 동작 확인
 - [ ] OPERATIONS.md의 Redis 캐시 명령어에서 `$REDIS_PASSWORD` 환경변수 참조 검증 (`.env` 파일 sourcing 필요 여부 명시)
 - [ ] E2E 테스트에서 ES 인덱스 263,463건과 Loop 10 재인덱싱 255,568건 간 차이 원인 조사
+
+---
+
+## Loop 19 (2026-03-24)
+
+### 작업 전: 목표
+- Loop 18에서 이월된 TODO 수행:
+  1. Loop 18 커밋 push 및 CI 정상 동작 확인
+  2. OPERATIONS.md의 Redis 캐시 명령어에서 `$REDIS_PASSWORD` 환경변수 참조 검증 (`.env` 파일 sourcing 필요 여부 명시)
+  3. E2E 테스트에서 ES 인덱스 263,463건과 Loop 10 재인덱싱 255,568건 간 차이 원인 조사
+
+### 작업 중: 주요 문제 및 의사결정
+
+#### 1. Loop 18 커밋 push 및 CI 검증
+- Loop 18 커밋(`c96487c docs(gis): fix OPERATIONS.md commands and add docs section to README`)은 이미 push된 상태 (git status clean)
+- CI run #23483939965 자동 트리거: 9/10 jobs SUCCESS, e2e-test 진행 중 (대기 후 확인 예정)
+
+#### 2. OPERATIONS.md `$REDIS_PASSWORD` 환경변수 참조 검증
+- **문제**: OPERATIONS.md에서 `docker exec redis redis-cli -a "$REDIS_PASSWORD" ...` 명령어 6곳, `$ELASTIC_PASSWORD` 1곳 사용
+  - 호스트 셸에서 실행 시 `$REDIS_PASSWORD`가 빈 문자열로 확장됨 → Redis AUTH 실패
+  - `REDIS_PASSWORD`는 `docker/layer3-apps/gis/.env`에 정의되어 있으나, Docker Compose가 자동 로드할 뿐 호스트 셸에는 노출 안 됨
+- **수정**: Redis 캐시 관리 섹션(§4) 상단에 `.env` 파일 sourcing 안내 추가
+  - `source docker/layer3-apps/gis/.env` 명령어 안내
+  - `$REDIS_PASSWORD`, `$ELASTIC_PASSWORD` 등 환경변수가 GIS `.env`에 정의됨을 명시
+
+#### 3. ES 인덱스 263,463건 vs 255,568건 차이 원인 분석 — 해결됨
+- **현재 상태**: ES 263,463건 = parcels 254,741 + buildings 8,722 (정확히 일치, 불일치 없음)
+  - `WHERE jibun IS NOT NULL`: NULL 0건 (필터링 손실 없음)
+  - `WHERE bld_name IS NOT NULL`: NULL 0건 (필터링 손실 없음)
+- **Loop 10 당시 255,568건의 원인 추정**:
+  - Loop 10에서 인덱싱 스크립트 재실행 시 `JOIN gis.regions r ON r.id = p.region_id` 조건에서 region_id 불일치 가능
+  - Loop 11에서 `06_seed_pocheon.sql`의 region code를 `4165000000` → `POCHEON`으로 수정 → region JOIN 정상화
+  - 이후(Loop 12~18 사이) 재인덱싱 또는 API 워커 처리를 통해 정상 인덱싱 복원
+  - 263,462(Loop 9) ≈ 263,463(현재): 1건 차이는 건물 데이터 추가/삭제에 의한 것
+- **결론**: 현재 ES와 DB 간 불일치 없음, Loop 10 시점의 차이는 region code 수정(Loop 11) 이후 해소됨
+
+### 작업 후: 완료 내용
+- [x] Loop 18 커밋 이미 push 확인, CI run #23483939965 진행 중 (9/10 SUCCESS, e2e-test 대기)
+- [x] OPERATIONS.md §4 Redis 캐시 관리에 `.env` sourcing 안내 추가 (`source docker/layer3-apps/gis/.env`)
+- [x] ES 인덱스 건수 차이 분석 완료: 현재 263,463건 = parcels + buildings 정확히 일치, Loop 10 차이는 region code 수정(Loop 11) 후 해소됨
+
+### 다음 루프 TODO
+- [ ] Loop 19 커밋 push 및 CI 정상 동작 확인 (OPERATIONS.md 환경변수 안내 추가, HISTORY.md)
+- [ ] CI run #23483939965 e2e-test 최종 결과 확인 (51/51 PASS 예상)
+- [ ] OPERATIONS.md §2 레이어 추가/수정 섹션의 Redis 명령어에도 동일한 `.env` sourcing 안내 필요 여부 검토 (§4에서 이미 안내했으므로 중복 여부 판단)
