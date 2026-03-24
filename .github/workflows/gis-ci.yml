@@ -12,6 +12,7 @@ on:
 
 env:
   GIS_DIR: docker/layer3-apps/gis
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ─── gis-api: Python lint + import check ───
