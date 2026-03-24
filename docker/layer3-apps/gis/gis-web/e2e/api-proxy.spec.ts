@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("API Proxy via nginx", () => {
+test.describe("API Proxy via nginx @nginx", () => {
   test("should proxy /api/health", async ({ request }) => {
     const res = await request.get("/api/health");
     expect(res.ok()).toBeTruthy();

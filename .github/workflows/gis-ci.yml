@@ -315,7 +315,7 @@ jobs:
       - name: Run E2E tests (skip full-stack tests in CI)
         run: |
           cd ${{ env.GIS_DIR }}/gis-web
-          E2E_BASE_URL=http://localhost:5173 npx playwright test --grep-invert="@full-stack"
+          E2E_BASE_URL=http://localhost:5173 npx playwright test --grep-invert="@full-stack|@nginx"
         env:
           CI: true
 
