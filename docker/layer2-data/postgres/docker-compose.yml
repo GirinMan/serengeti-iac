@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:${POSTGRES_VERSION}
+    image: postgis/postgis:${POSTGRES_VERSION}
     container_name: postgres
     restart: unless-stopped
     environment:

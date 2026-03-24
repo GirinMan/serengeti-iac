@@ -5,7 +5,7 @@ COMPOSE = docker compose --env-file .env
 PRIMARY_STORAGE_ROOT ?= /mnt/primary
 ARCHIVE_STORAGE_ROOT ?= /mnt/archive
 
-.PHONY: help check-env validate preflight storage-map runtime-snapshot system storage ssh ufw cloudflared network dirs ops data apps backup bootstrap app status logs docs-host clean
+.PHONY: help check-env validate preflight storage-map runtime-snapshot system storage ssh ufw cloudflared network dirs ops data apps gis gis-init gis-migrate gis-status backup bootstrap app status logs docs-host clean
 
 help:
 	@echo "===== Serengeti Homelab IaC ====="
@@ -25,7 +25,11 @@ help:
 	@echo "make apps        - Layer 3 애플리케이션 실행"
 	@echo "make backup      - 백업 파이프라인 실행"
 	@echo "make bootstrap   - Layer 1~3 전체 스택 순차 실행"
-	@echo "make app name=<blog|nextcloud|plane> - 개별 앱 재배포"
+	@echo "make gis-init    - GIS DB 생성 + 스키마 적용"
+	@echo "make gis-migrate - 레거시 Shapefile → PostGIS 마이그레이션"
+	@echo "make gis         - Layer 3 GIS 서비스 실행"
+	@echo "make gis-status  - GIS 서비스 상태 점검"
+	@echo "make app name=<blog|nextcloud|plane|gis> - 개별 앱 재배포"
 	@echo "make docs-host   - 현재 호스트 상태 수집 문서 생성"
 	@echo "make status      - 전체 상태 확인"
 	@echo "make logs name=<container> - 컨테이너 로그 확인"
@@ -53,6 +57,10 @@ validate: check-env
 	bash -n scripts/collect_host_state.sh
 	bash -n scripts/storage_env_candidates.sh
 	bash -n scripts/runtime_snapshot.sh
+	bash -n docker/layer3-apps/gis/init-gisdb.sh
+	bash -n docker/layer3-apps/gis/migrate-legacy.sh
+	bash -n docker/layer3-apps/gis/migration/10_setup_elasticsearch.sh
+	bash -n docker/layer3-apps/gis/gis-status.sh
 	@if command -v docker >/dev/null 2>&1; then \
 		echo "==> Docker Compose 설정 확인"; \
 		$(COMPOSE) -f docker/layer1-ops/npm/docker-compose.yml config >/dev/null; \
@@ -67,6 +75,7 @@ validate: check-env
 		$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer3-apps/plane/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer3-apps/backup/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer3-apps/gis/docker-compose.yml config >/dev/null; \
 	else \
 		echo "==> Docker가 없어 Compose 검증은 건너뜁니다."; \
 	fi
@@ -95,6 +104,7 @@ dirs:
 	mkdir -p $(ARCHIVE_STORAGE_ROOT)/astro-blog/dist
 	mkdir -p docker/layer3-apps/nextcloud/html
 	mkdir -p docs/raw
+	mkdir -p /tmp/gis-worker
 
 system:
 	@echo "==> [Layer 0] 시스템 기초 설정"
@@ -148,6 +158,22 @@ apps: check-env network dirs
 	$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer3-apps/plane/docker-compose.yml up -d
 
+gis-init: check-env
+	@echo "==> [Layer 3] GIS DB 초기화"
+	bash docker/layer3-apps/gis/init-gisdb.sh
+
+gis-migrate: check-env gis-init
+	@echo "==> [Layer 3] 레거시 데이터 마이그레이션"
+	bash docker/layer3-apps/gis/migrate-legacy.sh
+
+gis: check-env network gis-init
+	@echo "==> [Layer 3] GIS 서비스 실행"
+	$(COMPOSE) -f docker/layer3-apps/gis/docker-compose.yml up -d --build
+
+gis-status:
+	@echo "==> [Layer 3] GIS 서비스 상태 점검"
+	bash docker/layer3-apps/gis/gis-status.sh
+
 backup: check-env network
 	@echo "==> [Layer 3] 백업 파이프라인 실행"
 	$(COMPOSE) -f docker/layer3-apps/backup/docker-compose.yml up -d --build
@@ -157,7 +183,7 @@ bootstrap: ops data apps backup
 
 app: check-env
 	@if [ -z "$(name)" ]; then \
-		echo "사용법: make app name=<blog|nextcloud|plane>"; \
+		echo "사용법: make app name=<blog|nextcloud|plane|gis>"; \
 		exit 1; \
 	fi
 	@if [ "$(name)" = "blog" ]; then \
@@ -168,6 +194,9 @@ app: check-env
 		docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='$(PLANE_DB_NAME)'" | grep -q 1 || \
 			docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -c "CREATE DATABASE $(PLANE_DB_NAME);"; \
 		$(COMPOSE) -f docker/layer3-apps/plane/docker-compose.yml up -d --force-recreate; \
+	elif [ "$(name)" = "gis" ]; then \
+		bash docker/layer3-apps/gis/init-gisdb.sh; \
+		$(COMPOSE) -f docker/layer3-apps/gis/docker-compose.yml up -d --build --force-recreate; \
 	else \
 		echo "지원하지 않는 앱입니다: $(name)"; \
 		exit 1; \
@@ -197,6 +226,7 @@ docs-host:
 clean:
 	@echo "==> 모든 컨테이너 중단"
 	-$(COMPOSE) -f docker/layer3-apps/backup/docker-compose.yml down --remove-orphans
+	-$(COMPOSE) -f docker/layer3-apps/gis/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer3-apps/plane/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml down --remove-orphans
