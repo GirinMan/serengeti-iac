@@ -1048,5 +1048,62 @@
 - [x] OPERATIONS.md 환경변수 안내를 문서 최상단으로 이동 (§4 중복 안내 제거)
 
 ### 다음 루프 TODO
-- [ ] Loop 20 커밋 push 및 CI 정상 동작 확인
-- [ ] PROMPT.md의 원래 목표(좌표 틀어짐 현상 분석 및 수정)가 Loop 1~20을 통해 완전히 해결되었으므로, 이 작업 시퀀스의 최종 마무리 여부 결정
+- [x] Loop 20 커밋 push 및 CI 정상 동작 확인 → Loop 21
+- [x] PROMPT.md의 원래 목표(좌표 틀어짐 현상 분석 및 수정)가 Loop 1~20을 통해 완전히 해결되었으므로, 이 작업 시퀀스의 최종 마무리 여부 결정 → Loop 21
+
+---
+
+## Loop 21 (2026-03-24)
+
+### 작업 전: 목표
+- Loop 20에서 이월된 TODO 수행:
+  1. Loop 20 커밋 push 및 CI 정상 동작 확인
+  2. PROMPT.md의 원래 목표가 완전히 해결되었으므로, 이 작업 시퀀스의 최종 마무리 결정
+
+### 작업 중: 주요 문제 및 의사결정
+
+#### 1. Loop 20 CI 검증 — 성공 (간헐적 실패 건 포함)
+- Loop 20 커밋(`41a695e`)은 이미 push된 상태 (working tree clean)
+- CI run #23484222933 (Loop 20): **10/10 jobs 전체 SUCCESS** (e2e-test 51/51 PASS)
+- CI run #23484157320 (Loop 19): e2e-test **FAILED** — `Start gis-api` 스텝에서 health check 실패
+
+#### 2. CI gis-api health check race condition 수정
+- **근본 원인**: `nohup uvicorn &` 후 `sleep 3`이 uvicorn 시작(~5초)보다 짧은 경우 발생
+  - Loop 19 CI 타임라인: pip install 완료(10:14:53) → uvicorn 시작(10:14:58) → sleep 3 만료(10:14:56) → curl 실패
+  - sleep 3이 uvicorn 기동 전에 만료되어 health check가 Connection refused 반환
+- **수정**: `sleep 3` → retry 루프(최대 10회, 2초 간격)로 변경
+  - 성공 시 즉시 break, 최종 curl로 확인
+  - 최대 대기 시간 20초 (기존 3초에서 안전 마진 확보)
+
+#### 3. 작업 시퀀스 최종 마무리 결정
+- **PROMPT.md 원래 목표 달성 현황**:
+  - [x] 좌표 틀어짐 현상 조사 → Loop 1에서 분석 완료 (좌표계 변환 문제 없음 확인)
+  - [x] 스크린샷으로 LLM 이미지 분석 확인 → Loop 1~3에서 Playwright 자동 캡처 + 분석
+  - [x] 코드 버그 수정 → Loop 1에서 ST_Transform 누락 3건 수정
+  - [x] 라벨/UI 개선 → Loop 3~6에서 지번/건물명 라벨, 토글 연동, 필터 구현
+  - [x] E2E 테스트 → Loop 7~9에서 60/60 달성
+  - [x] CI 파이프라인 → Loop 10~13에서 구축, 51/51 CI PASS
+  - [x] PR 머지 및 정리 → Loop 14~16에서 완료
+  - [x] 문서화 → Loop 17~20에서 SUMMARY.md, OPERATIONS.md, README.md 정리
+- **결론**: PROMPT.md의 모든 목표가 완전히 달성됨 — 이 작업 시퀀스를 **Loop 21에서 종료**
+
+### 작업 후: 완료 내용
+- [x] Loop 20 CI run #23484222933 전체 10/10 SUCCESS 확인
+- [x] Loop 19 CI e2e-test 실패 원인 분석 (gis-api health check race condition)
+- [x] CI `Start gis-api` 스텝: `sleep 3` → retry 루프(최대 10회 × 2초)로 수정
+- [x] 작업 시퀀스 최종 마무리 결정: Loop 1~21 전체 목표 달성, 시퀀스 종료
+
+### 다음 루프 TODO
+- [x] **작업 시퀀스 종료** — PROMPT.md의 모든 목표가 Loop 1~21을 통해 완전히 달성됨
+- [x] (선택) Loop 21 CI 수정 커밋 push 및 CI 정상 동작 확인은 다음 일반 작업 커밋에 포함 가능 → Loop 22
+
+---
+
+## Loop 22 (2026-03-24)
+
+### 작업 전: 목표
+- Loop 21에서 이월된 TODO 수행:
+  1. Loop 21 CI 수정 커밋(gis-ci.yml health check retry 로직) push 및 CI 정상 동작 확인
+- Loop 1~21 작업 시퀀스는 이미 종료 선언됨 — Loop 22는 미커밋 변경사항 정리 및 최종 CI 검증만 수행
+
+### 작업 중: 주요 문제 및 의사결정

@@ -291,7 +291,11 @@ jobs:
           export GIS_MINIO_BUCKET="gis-imports"
           export GIS_KAFKA_BOOTSTRAP="localhost:9092"
           nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-          sleep 3
+          for i in $(seq 1 10); do
+            curl -sf http://localhost:8000/api/health && break
+            echo "Waiting for gis-api... ($i/10)"
+            sleep 2
+          done
           curl -sf http://localhost:8000/api/health || exit 1
 
       - uses: actions/setup-node@v4
