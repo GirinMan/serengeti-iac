@@ -1,0 +1,14 @@
+{
+  "name": "giraffe-blog",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.17",
+    "astro": "^4.5.18"
+  }
+}

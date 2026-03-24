@@ -1,0 +1,106 @@
+# NPM Proxy Host Configuration Template
+#
+# This file contains Nginx Proxy Manager host mappings.
+# Copy to npm-hosts.yml and fill with actual domains.
+# Keep this in your private secret repo, NOT in the public IaC repo.
+
+version: "1.0"
+
+# NPM Connection Info
+npm:
+  url: "http://127.0.0.1:81"  # NPM Admin UI
+  # API credentials (optional, for automation)
+  # email: "admin@example.com"
+  # password: "changeme"
+
+# Proxy Hosts
+# These will be created/updated via NPM API or manually
+hosts:
+  # Static blog
+  - name: "Blog"
+    domain_names:
+      - "${CF_BLOG_HOST}"
+    forward_scheme: "http"
+    forward_host: "astro-blog"
+    forward_port: 80
+    certificate_id: "new"  # Request new Let's Encrypt cert
+    ssl_forced: true
+    http2_support: true
+    block_exploits: true
+    cache_assets: true
+    advanced_config: |
+      # Astro static site optimizations
+      location ~* ^/_astro/.*\.(css|js|jpg|jpeg|png|gif|svg|ico|woff|woff2)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+      }
+
+  # Task management
+  - name: "Plane Tasks"
+    domain_names:
+      - "${CF_PLANE_HOST}"
+    forward_scheme: "http"
+    forward_host: "plane-proxy"
+    forward_port: 80
+    certificate_id: "new"
+    ssl_forced: true
+    http2_support: true
+    block_exploits: true
+    cache_assets: false
+    websocket_support: true  # Plane requires WebSocket
+    advanced_config: |
+      # Plane-specific settings
+      client_max_body_size 50M;
+      proxy_read_timeout 300s;
+
+  # Cloud storage
+  - name: "Nextcloud"
+    domain_names:
+      - "${CF_NAS_HOST}"
+    forward_scheme: "http"
+    forward_host: "nextcloud"
+    forward_port: 80
+    certificate_id: "new"
+    ssl_forced: true
+    http2_support: true
+    block_exploits: true
+    cache_assets: false
+    advanced_config: |
+      # Nextcloud requirements
+      client_max_body_size 512M;
+      proxy_read_timeout 3600s;
+      proxy_request_buffering off;
+
+  # Object storage console
+  - name: "Minio Console"
+    domain_names:
+      - "${CF_S3_HOST}"
+    forward_scheme: "http"
+    forward_host: "minio"
+    forward_port: ${MINIO_CONSOLE_PORT}
+    certificate_id: "new"
+    ssl_forced: true
+    http2_support: true
+    block_exploits: true
+    cache_assets: false
+    websocket_support: true
+
+# Wildcard example (if needed)
+# - name: "API Gateway"
+#   domain_names:
+#     - "api.${CF_DOMAIN}"
+#     - "*.api.${CF_DOMAIN}"
+#   forward_scheme: "http"
+#   forward_host: "api-gateway"
+#   forward_port: 8080
+
+# Internal-only service example (no SSL)
+# - name: "Prometheus (Internal)"
+#   domain_names:
+#     - "prometheus.local"
+#   forward_scheme: "http"
+#   forward_host: "prometheus"
+#   forward_port: 9090
+#   ssl_forced: false
+#   access_list_id: 1  # Restrict to local network

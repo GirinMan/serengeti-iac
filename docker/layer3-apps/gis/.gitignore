@@ -1,0 +1,50 @@
+# Legacy code (read-only reference, 43GB)
+origin/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+
+# Node
+node_modules/
+dist/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log
+
+# Migration data (large generated files)
+*.geojson
+
+# Build artifacts
+*.egg
+*.whl
+
+# Logs
+logs/
+
+# Playwright
+test-results/
+playwright-report/
+
+# Development screenshots (large PNG files in docs/)
+docs/*/screenshots/
+
+# Local Docker overrides (E2E test port exposure etc.)
+docker-compose.override.yml

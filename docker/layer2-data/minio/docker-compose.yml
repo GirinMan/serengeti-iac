@@ -1,0 +1,27 @@
+services:
+  minio:
+    image: minio/minio:${MINIO_VERSION}
+    container_name: minio
+    restart: unless-stopped
+    command: server /data --address ":${MINIO_API_PORT}" --console-address ":${MINIO_CONSOLE_PORT}"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ${ARCHIVE_STORAGE_ROOT}/minio:/data
+    networks:
+      data-tier:
+        aliases:
+          - plane-minio
+      proxy-tier:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:${MINIO_API_PORT}/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  data-tier:
+    external: true
+  proxy-tier:
+    external: true

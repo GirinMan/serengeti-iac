@@ -1,0 +1,109 @@
+# Service Configuration Example
+#
+# This file demonstrates how to add new services with minimal changes to the IaC codebase.
+# Copy this to a private repo as `services.yml` with actual values.
+#
+# Pattern: Each service defines its NPM routing, compose location, and metadata.
+# The IaC repo contains only infrastructure code, not deployment specifics.
+
+version: "1.0"
+
+# NPM Proxy Host Configurations
+# These map subdomains to container targets
+npm_hosts:
+  blog:
+    domain: "${CF_BLOG_HOST}"  # References .env variable
+    forward_to: "astro-blog:80"
+    ssl: true
+    cache_assets: true
+    websockets: false
+    http2: true
+
+  tasks:
+    domain: "${CF_PLANE_HOST}"
+    forward_to: "plane-proxy:80"
+    ssl: true
+    cache_assets: false
+    websockets: true  # Plane needs WebSocket support
+
+  nas:
+    domain: "${CF_NAS_HOST}"
+    forward_to: "nextcloud:80"
+    ssl: true
+    cache_assets: false
+    websockets: false
+    # Custom headers for Nextcloud
+    custom_config: |
+      client_max_body_size 512M;
+
+  s3:
+    domain: "${CF_S3_HOST}"
+    forward_to: "minio:${MINIO_CONSOLE_PORT}"
+    ssl: true
+    cache_assets: false
+    websockets: false
+
+# Service Metadata
+# Track what's deployed and where it lives in the compose structure
+services:
+  astro-blog:
+    type: static-site
+    compose_path: docker/layer3-apps/blog/docker-compose.yml
+    health_endpoint: "/"
+    description: "Personal blog (Astro static site)"
+    dependencies:
+      - npm
+
+  plane:
+    type: app-stack
+    compose_path: docker/layer3-apps/plane/docker-compose.yml
+    health_endpoint: "/"
+    description: "Task management platform"
+    dependencies:
+      - npm
+      - postgres
+      - redis
+      - rabbitmq
+      - minio
+
+  nextcloud:
+    type: app-single
+    compose_path: docker/layer3-apps/nextcloud/docker-compose.yml
+    health_endpoint: "/status.php"
+    description: "Personal cloud storage"
+    dependencies:
+      - npm
+      - postgres
+      - redis
+
+# Custom service example (how to add new services)
+#
+# my-new-app:
+#   type: app-single
+#   compose_path: docker/layer3-apps/my-new-app/docker-compose.yml
+#   health_endpoint: "/health"
+#   description: "My custom application"
+#   dependencies:
+#     - npm
+#     - postgres  # if needed
+#
+# Then add NPM host mapping:
+#
+# npm_hosts:
+#   my-app:
+#     domain: "${CF_MY_APP_HOST}"  # Add to .env
+#     forward_to: "my-new-app:3000"
+#     ssl: true
+
+# External service integrations (not in Docker)
+external_services:
+  cloudflare_tunnel:
+    status: pending
+    tunnel_token: "${CF_TUNNEL_TOKEN}"
+    routes:
+      - "*.${CF_DOMAIN}"
+      - "${CF_DOMAIN}"
+
+  github_runner:
+    status: not_configured
+    description: "Self-hosted GitHub Actions runner (optional)"

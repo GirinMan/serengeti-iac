@@ -1,0 +1,25 @@
+services:
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:2.11.1
+    container_name: npm
+    restart: unless-stopped
+    ports:
+      - "${NPM_HTTP_PORT}:80"
+      - "${NPM_HTTPS_PORT}:443"
+      - "127.0.0.1:${NPM_ADMIN_PORT}:81"
+    environment:
+      DB_SQLITE_FILE: /data/database.sqlite
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    networks:
+      - proxy-tier
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  proxy-tier:
+    external: true

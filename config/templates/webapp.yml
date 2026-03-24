@@ -1,0 +1,52 @@
+# Template: Standard Web Application
+#
+# Use case: Node.js, Python, Ruby, PHP apps with database backend
+# Copy to docker/layer3-apps/<app-name>/docker-compose.yml
+
+services:
+  __APP_NAME__:
+    image: __IMAGE__:__TAG__
+    container_name: __APP_NAME__
+    restart: unless-stopped
+    environment:
+      # Database connection
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: __DB_NAME__
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Redis cache
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      # App-specific settings
+      APP_PORT: __APP_PORT__
+      NODE_ENV: production
+
+    volumes:
+      # Persistent data
+      - ${PRIMARY_STORAGE_ROOT}/__APP_NAME__/data:/data
+      # Logs
+      - ${PRIMARY_STORAGE_ROOT}/__APP_NAME__/logs:/logs
+
+    networks:
+      - proxy-tier
+      - data-tier
+
+    depends_on:
+      - postgres
+      - redis
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:__APP_PORT__/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  proxy-tier:
+    external: true
+  data-tier:
+    external: true

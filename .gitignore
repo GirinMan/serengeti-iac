@@ -1,3 +1,6 @@
+# Node
+node_modules/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -143,6 +146,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+docs/perplexity/.env
+docs/perplexity/__pycache__/
 
 # Spyder project settings
 .spyderproject
@@ -198,6 +203,26 @@ cython_debug/
 #  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
 #  refer to https://docs.cursor.com/context/ignore-files
+
+# Serengeti IaC
+*.pem
+*.key
+system/authorized_keys
+docs/raw/
+docker/layer1-ops/npm/data/
+docker/layer1-ops/npm/letsencrypt/
+docker/layer2-data/*/data/
+docker/layer2-data/*/logs/
+docker/layer3-apps/blog/content/
+docker/layer3-apps/nextcloud/html/
+docker/layer3-apps/backup/.cache/
+docs/manual/external-setup-template.md
+
+# Secret configuration files (keep in separate private repo)
+config/services.yml
+config/npm-hosts.yml
+config/*.secret.yml
+
 .cursorignore
 .cursorindexingignore
 
