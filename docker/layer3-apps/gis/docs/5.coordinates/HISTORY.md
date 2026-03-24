@@ -826,3 +826,105 @@
 - [ ] main 브랜치에 Loop 15 커밋 push 및 CI 정상 동작 확인
 - [ ] PostGIS 이미지 변경(`postgis/postgis:16-3.4-alpine`)이 기존 postgres 컨테이너에 미치는 영향 검토 (Nextcloud, Plane DB 호환성)
 - [ ] `feat/initial-commit`, `feat/add-user-cli` 브랜치 정리 여부 결정
+
+---
+
+## Loop 16 (2026-03-24)
+
+### 작업 전: 목표
+- Loop 15에서 이월된 TODO 수행:
+  1. main 브랜치에 Loop 15 커밋 push 및 CI 정상 동작 확인
+  2. PostGIS 이미지 변경(`postgis/postgis:16-3.4-alpine`)이 기존 postgres 컨테이너에 미치는 영향 검토 (Nextcloud, Plane DB 호환성)
+  3. `feat/initial-commit`, `feat/add-user-cli` 브랜치 정리 여부 결정
+
+### 작업 중: 주요 문제 및 의사결정
+
+#### 1. main 브랜치 Loop 15 커밋 CI 검증
+- Loop 15에서 push한 3개 커밋(IaC 통합, toggle-gui.sh, Loop 14-15 HISTORY)이 main에 이미 반영된 상태
+- CI run #23483081176 자동 트리거 → **10/10 jobs 전체 SUCCESS** (e2e-test 51/51 PASS)
+- Loop 13에서 추가한 `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` 정상 적용, Node.js 20 deprecation 경고 없음
+
+#### 2. PostGIS 이미지 변경 영향 검토 — 문제 없음
+- 현재 postgres 컨테이너: `postgis/postgis:16-3.4-alpine` (Loop 15에서 변경)
+- 공유 DB 목록: nextcloud, plane, directus, ghost_blog, maindb, gisdb
+- **검증 결과**:
+  - Nextcloud DB: PostGIS 확장 0건 — 영향 없음
+  - Plane DB: PostGIS 확장 0건 — 영향 없음
+  - 모든 서비스 38시간 이상 정상 운영 중 (nextcloud healthy, plane 전 컨테이너 healthy)
+- **결론**: `postgis/postgis` 이미지는 `postgres:16-alpine`의 상위 호환 — PostGIS 확장을 사용하지 않는 DB에 부작용 없음
+
+#### 3. 머지 완료 브랜치 정리
+- `feat/initial-commit`: main에 머지 완료 (`git merge-base --is-ancestor` 확인) → 로컬 + 원격(`origin/feat/initial-commit`) 삭제
+- `feat/add-user-cli`: main에 머지 완료 → 로컬 삭제 (원격 브랜치 없었음)
+- 정리 후 남은 브랜치: `main`만 존재 (로컬 + 원격)
+
+### 작업 후: 완료 내용
+- [x] CI run #23483081176 전체 10/10 SUCCESS 확인 (main 브랜치 Loop 15 커밋)
+- [x] PostGIS 이미지 변경이 Nextcloud/Plane DB에 영향 없음 확인 (PostGIS 확장 미사용, 38h+ 정상 운영)
+- [x] `feat/initial-commit` 원격 + 로컬 브랜치 삭제
+- [x] `feat/add-user-cli` 로컬 브랜치 삭제
+- [x] 전체 브랜치 정리 완료 (main만 유지)
+
+### 다음 루프 TODO
+- [ ] Loop 1~16 전체 작업 요약 문서 작성 (좌표 분석 → 코드 수정 → 라벨 → E2E → CI → PR 머지 → 정리)
+- [ ] GIS 앱 운영 가이드 문서 정리 (데이터 임포트, 레이어 추가, ES 인덱싱 절차)
+- [ ] docker-compose.override.yml 없이도 E2E 테스트가 동작하도록 CI/로컬 통합 구성 검토
+
+---
+
+## Loop 17 (2026-03-24)
+
+### 작업 전: 목표
+- Loop 16에서 이월된 TODO 수행:
+  1. Loop 1~16 전체 작업 요약 문서 작성 (좌표 분석 → 코드 수정 → 라벨 → E2E → CI → PR 머지 → 정리)
+  2. GIS 앱 운영 가이드 문서 정리 (데이터 임포트, 레이어 추가, ES 인덱싱 절차)
+  3. docker-compose.override.yml 없이도 E2E 테스트가 동작하도록 CI/로컬 통합 구성 검토
+
+### 작업 중: 주요 문제 및 의사결정
+
+#### 1. Loop 1~16 전체 작업 요약 문서 작성
+- `docs/5.coordinates/SUMMARY.md` 신규 작성
+- 5개 Phase로 구분: 좌표 분석(1~2) → 라벨 레이어(3~6) → E2E 테스트(7~9) → CI 파이프라인(10~13) → PR 머지 및 정리(13~16)
+- 수정된 주요 파일 목록 테이블 포함 (SQL, Frontend, E2E, CI, Docker, IaC)
+- 각 Phase별 핵심 결과와 의사결정 요약
+
+#### 2. GIS 앱 운영 가이드 문서 작성
+- `docs/OPERATIONS.md` 신규 작성 (README.md와 역할 분리: README=초기 배포, OPERATIONS=일상 운영)
+- 7개 섹션: 데이터 임포트, 레이어 추가/수정, ES 인덱싱, Redis 캐시 관리, E2E 테스트, 트러블슈팅, DB 접속 정보
+- API 업로드 방식(권장)과 수동 SQL 마이그레이션 방식 모두 문서화
+- `_LABELS` 컨벤션, 라벨 스타일 JSON 예시, 레이어 시드 SQL 동기화 주의사항 포함
+- 트러블슈팅 섹션: 타일 미로드, 검색 불가, 레이어 미표시, 워커 미처리 각 케이스별 진단 명령
+
+#### 3. E2E 테스트 통합 구성 — `make gis-e2e` 타겟 추가
+- **현 상태 분석**: `docker-compose.override.yml`은 Docker Compose 표준 패턴, `.gitignore`에 포함되어 로컬 전용
+- **의사결정**: override 파일 자체를 없앨 필요 없음 — 대신 `make gis-e2e`로 원스텝 실행 제공
+- **구현**: Makefile에 `gis-e2e` 타겟 추가
+  - override 파일 미존재 시 자동 생성 (포트 18080 노출)
+  - `docker compose up -d gis-web` (override 포함)
+  - `npx playwright test $(ARGS)` 실행
+  - 사용법: `make gis-e2e` (전체) 또는 `make gis-e2e ARGS="search"` (특정 테스트)
+- help 출력에 `make gis-e2e` 추가
+
+### 작업 후: 완료 내용
+- [x] `docs/5.coordinates/SUMMARY.md` 작성 — Loop 1~16 전체 작업 요약 (5 Phase, 주요 파일 목록)
+- [x] `docs/OPERATIONS.md` 작성 — GIS 앱 운영 가이드 (7개 섹션)
+- [x] `Makefile`에 `gis-e2e` 타겟 추가 (override 자동 생성 + playwright 실행)
+
+### 다음 루프 TODO
+- [ ] Loop 17 커밋 push 및 CI 정상 동작 확인
+- [ ] OPERATIONS.md의 예시 명령어를 실제 환경에서 검증 (특히 수동 shp2pgsql 임포트 절차)
+- [ ] SUMMARY.md를 README.md에서 참조 링크 추가 검토
+
+---
+
+## Loop 18 (2026-03-24)
+
+### 작업 전: 목표
+- Loop 17에서 이월된 TODO 수행:
+  1. Loop 17 커밋 push 및 CI 정상 동작 확인 (SUMMARY.md, OPERATIONS.md, Makefile gis-e2e 타겟)
+  2. OPERATIONS.md의 예시 명령어를 실제 환경에서 검증 (특히 수동 shp2pgsql 임포트 절차)
+  3. SUMMARY.md를 README.md에서 참조 링크 추가 검토
+
+### 작업 중: 주요 문제 및 의사결정
+
+(작업 진행 중...)

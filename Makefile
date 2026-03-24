@@ -5,7 +5,7 @@ COMPOSE = docker compose --env-file .env
 PRIMARY_STORAGE_ROOT ?= /mnt/primary
 ARCHIVE_STORAGE_ROOT ?= /mnt/archive
 
-.PHONY: help check-env validate preflight storage-map runtime-snapshot system storage ssh ufw cloudflared network dirs ops data apps gis gis-init gis-migrate gis-status backup bootstrap app status logs docs-host clean
+.PHONY: help check-env validate preflight storage-map runtime-snapshot system storage ssh ufw cloudflared network dirs ops data apps gis gis-init gis-migrate gis-status gis-e2e backup bootstrap app status logs docs-host clean
 
 help:
 	@echo "===== Serengeti Homelab IaC ====="
@@ -29,6 +29,7 @@ help:
 	@echo "make gis-migrate - 레거시 Shapefile → PostGIS 마이그레이션"
 	@echo "make gis         - Layer 3 GIS 서비스 실행"
 	@echo "make gis-status  - GIS 서비스 상태 점검"
+	@echo "make gis-e2e     - GIS E2E 테스트 실행 (override 자동 생성)"
 	@echo "make app name=<blog|nextcloud|plane|gis> - 개별 앱 재배포"
 	@echo "make docs-host   - 현재 호스트 상태 수집 문서 생성"
 	@echo "make status      - 전체 상태 확인"
@@ -173,6 +174,14 @@ gis: check-env network gis-init
 gis-status:
 	@echo "==> [Layer 3] GIS 서비스 상태 점검"
 	bash docker/layer3-apps/gis/gis-status.sh
+
+GIS_DIR = docker/layer3-apps/gis
+GIS_OVERRIDE = $(GIS_DIR)/docker-compose.override.yml
+gis-e2e:
+	@echo "==> [Layer 3] GIS E2E 테스트 실행"
+	@test -f $(GIS_OVERRIDE) || printf '# Auto-generated for E2E tests (in .gitignore)\nservices:\n  gis-web:\n    ports:\n      - "18080:80"\n' > $(GIS_OVERRIDE)
+	$(COMPOSE) -f $(GIS_DIR)/docker-compose.yml -f $(GIS_OVERRIDE) up -d gis-web
+	cd $(GIS_DIR)/gis-web && npx playwright test $(ARGS)
 
 backup: check-env network
 	@echo "==> [Layer 3] 백업 파이프라인 실행"
