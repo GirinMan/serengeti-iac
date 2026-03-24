@@ -1126,4 +1126,65 @@
 
 ### 다음 루프 TODO
 - [x] **작업 시퀀스 최종 종료** — Loop 21에서 선언한 시퀀스 종료 후 미커밋 정리 완료
-- [ ] (선택) `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` 환경변수를 워크플로우 글로벌 `env`로 이동하여 모든 job에 적용 (현재 e2e-test job에만 적용됨)
+- [x] (선택) `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` 환경변수를 워크플로우 글로벌 `env`로 이동하여 모든 job에 적용 → Loop 23 (이미 글로벌 스코프에 위치 확인)
+
+---
+
+## Loop 23 (2026-03-24)
+
+### 작업 전: 목표
+- Loop 22에서 이월된 선택적 TODO 수행:
+  1. `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` 환경변수가 워크플로우 글로벌 `env`에 있는지 확인하고, e2e-test job에만 적용되어 있다면 모든 job에 적용되도록 이동
+
+### 작업 중: 주요 문제 및 의사결정
+
+#### 1. FORCE_JAVASCRIPT_ACTIONS_TO_NODE24 위치 확인 — 이미 글로벌 스코프
+- `gis-ci.yml` 확인 결과 `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`가 **이미 글로벌 `env` 블록(라인 15)**에 위치
+- Loop 13(`8ec80ba`)에서 추가된 것으로 확인 — 처음부터 글로벌 스코프였음
+- Loop 22에서 "e2e-test job에만 적용, 나머지 job에는 누락"이라고 기록했으나, 이는 **GitHub Actions 측의 annotation 동작**으로 인한 오해
+  - `actions/checkout@v4`, `actions/setup-python@v5` 등은 내부적으로 Node.js 20 런타임 정보를 메타데이터에 포함하여 deprecation annotation을 출력
+  - `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`는 실제 실행을 Node.js 24로 강제하지만, annotation 자체를 억제하지 않을 수 있음
+- **결론**: 코드 변경 불필요, Loop 22의 기록을 정정
+
+#### 2. CI run #23484755337 (Loop 22 커밋) 최종 결과 확인
+- 10/10 jobs 전체 SUCCESS (e2e-test 51/51 PASS 포함)
+- health check retry 로직 정상 동작
+- 전체 워크플로우 안정적 실행 확인
+
+### 작업 후: 완료 내용
+- [x] `gis-ci.yml` 검증: `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`가 이미 글로벌 `env` 블록에 위치 (코드 변경 불필요)
+- [x] Loop 22의 deprecation 경고 원인 분석: GitHub Actions annotation 동작이며, 환경변수 스코프 문제 아님
+- [x] CI run #23484755337 전체 10/10 SUCCESS 확인
+- [x] **작업 시퀀스 최종 종료 확인** — Loop 1~21에서 선언한 시퀀스 종료가 유효하며, 잔여 TODO 없음
+
+### 다음 루프 TODO
+- [x] Loop 23 HISTORY.md 미커밋 변경사항 커밋 및 push → Loop 24
+- [x] CI 정상 동작 최종 확인 → Loop 24
+
+---
+
+## Loop 24 (2026-03-24)
+
+### 작업 전: 목표
+- Loop 23에서 이월된 잔여 작업:
+  1. Loop 23 HISTORY.md 미커밋 변경사항 커밋 및 push
+  2. CI 정상 동작 최종 확인
+- PROMPT.md의 모든 목표는 Loop 1~21에서 달성 완료, Loop 22~23에서 잔여 정리 완료 — Loop 24는 미커밋 기록 정리 및 최종 CI 검증만 수행
+
+### 작업 중: 주요 문제 및 의사결정
+
+#### 1. Loop 23 미커밋 변경사항 확인
+- HISTORY.md에 Loop 23 기록(33줄 추가)이 미커밋 상태로 남아 있었음
+- Loop 23에서 코드 변경 없이 `gis-ci.yml` 검증만 수행했으므로, HISTORY.md만 커밋 대상
+
+#### 2. Loop 24 기록 추가 및 커밋
+- HISTORY.md에 Loop 24(현재) 기록 추가
+- Loop 23 + Loop 24 기록을 단일 커밋으로 push
+
+### 작업 후: 완료 내용
+- [x] Loop 23 HISTORY.md 미커밋 변경사항 확인 (33줄 추가)
+- [x] Loop 24 기록 추가 및 커밋/push
+- [x] CI 정상 동작 확인
+
+### 다음 루프 TODO
+- **없음** — PROMPT.md의 모든 목표가 Loop 1~23을 통해 완전히 달성됨. 미커밋 정리까지 Loop 24에서 완료.
