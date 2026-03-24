@@ -1,0 +1,121 @@
+services:
+  # ─── 벡터 타일 서버 (PostGIS → 동적 MVT) ───
+  pg-tileserv:
+    image: pramsey/pg_tileserv:latest
+    container_name: pg-tileserv
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${GIS_DB_NAME}"
+    networks:
+      - data-tier
+      - proxy-tier
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/7800'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # ─── Feature 서버 (PostGIS → OGC API Features) ───
+  pg-featureserv:
+    image: pramsey/pg_featureserv:latest
+    container_name: pg-featureserv
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${GIS_DB_NAME}"
+    networks:
+      - data-tier
+      - proxy-tier
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/9000'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # ─── 백엔드 API (FastAPI + PostGIS + Redis + ES) ───
+  gis-api:
+    build:
+      context: ./gis-api
+      dockerfile: Dockerfile
+    container_name: gis-api
+    environment:
+      GIS_DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${GIS_DB_NAME}"
+      GIS_REDIS_URL: "redis://:${REDIS_PASSWORD}@redis:6379/1"
+      GIS_ELASTICSEARCH_URL: "http://elasticsearch:9200"
+      GIS_ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD}"
+      GIS_JWT_SECRET: "${GIS_JWT_SECRET}"
+      GIS_MINIO_ENDPOINT: "${GIS_MINIO_ENDPOINT}"
+      GIS_MINIO_ACCESS_KEY: "${GIS_MINIO_ACCESS_KEY}"
+      GIS_MINIO_SECRET_KEY: "${GIS_MINIO_SECRET_KEY}"
+      GIS_MINIO_BUCKET: "${GIS_MINIO_BUCKET}"
+      GIS_KAFKA_BOOTSTRAP: "${GIS_KAFKA_BOOTSTRAP}"
+      GIS_CORS_ORIGINS: '["https://${CF_GIS_HOST}", "http://localhost:5173"]'
+    networks:
+      - data-tier
+      - proxy-tier
+    depends_on:
+      pg-tileserv:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+  # ─── 데이터 수집 워커 (Kafka consumer + shp2pgsql/ogr2ogr) ───
+  gis-worker:
+    build:
+      context: ./gis-worker
+      dockerfile: Dockerfile
+    container_name: gis-worker
+    environment:
+      GIS_DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${GIS_DB_NAME}"
+      GIS_MINIO_ENDPOINT: "${GIS_MINIO_ENDPOINT}"
+      GIS_MINIO_ACCESS_KEY: "${GIS_MINIO_ACCESS_KEY}"
+      GIS_MINIO_SECRET_KEY: "${GIS_MINIO_SECRET_KEY}"
+      GIS_MINIO_BUCKET: "${GIS_MINIO_BUCKET}"
+      GIS_KAFKA_BOOTSTRAP: "${GIS_KAFKA_BOOTSTRAP}"
+    volumes:
+      - /tmp/gis-worker:/tmp/gis-worker
+    networks:
+      - data-tier
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'python.*worker.main' > /dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ─── 프론트엔드 SPA (React + MapLibre GL JS) ───
+  gis-web:
+    build:
+      context: ./gis-web
+      dockerfile: Dockerfile
+    container_name: gis-web
+    volumes:
+      - ./nginx-spa.conf:/etc/nginx/conf.d/default.conf:ro
+      - tile-cache:/var/cache/nginx/tiles
+    networks:
+      - proxy-tier
+    depends_on:
+      gis-api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:80/ > /dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  tile-cache:
+
+networks:
+  proxy-tier:
+    external: true
+  data-tier:
+    external: true

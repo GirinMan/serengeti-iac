@@ -1,0 +1,347 @@
+name: GIS CI
+
+on:
+  push:
+    paths:
+      - 'docker/layer3-apps/gis/**'
+      - '.github/workflows/gis-ci.yml'
+  pull_request:
+    paths:
+      - 'docker/layer3-apps/gis/**'
+      - '.github/workflows/gis-ci.yml'
+
+env:
+  GIS_DIR: docker/layer3-apps/gis
+
+jobs:
+  # ─── gis-api: Python lint + import check ───
+  api-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docker/layer3-apps/gis/gis-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check imports
+        run: python -c "from app.main import app; print('FastAPI app loaded successfully')"
+
+      - name: Check config
+        run: |
+          python -c "from app.config import Settings; s = Settings(); print(f'Settings OK: {s.jwt_algorithm}')"
+
+  # ─── gis-web: TypeScript build ───
+  web-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docker/layer3-apps/gis/gis-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: docker/layer3-apps/gis/gis-web/package.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      - name: Check bundle output
+        run: |
+          ls -lh dist/assets/*.js
+          echo "--- Bundle sizes ---"
+          du -sh dist/
+
+  # ─── gis-worker: Python import check ───
+  worker-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docker/layer3-apps/gis/gis-worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check imports
+        run: python -c "from worker.config import Settings; s = Settings(); print(f'Worker config OK')"
+
+  # ─── Docker Compose config validation ───
+  compose-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate compose file
+        run: docker compose -f ${{ env.GIS_DIR }}/docker-compose.yml config --quiet
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test
+          GIS_DB_NAME: gisdb
+          GIS_JWT_SECRET: test
+          GIS_MINIO_ENDPOINT: minio:9000
+          GIS_MINIO_ACCESS_KEY: minioadmin
+          GIS_MINIO_SECRET_KEY: minioadmin
+          GIS_MINIO_BUCKET: gis-imports
+          GIS_KAFKA_BOOTSTRAP: kafka:9092
+          CF_GIS_HOST: gis.example.com
+          ELASTIC_PASSWORD: test
+          REDIS_PASSWORD: test
+
+  # ─── Shell script syntax check ───
+  shell-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check shell scripts
+        run: |
+          bash -n ${{ env.GIS_DIR }}/init-gisdb.sh
+          bash -n ${{ env.GIS_DIR }}/migrate-legacy.sh
+          bash -n ${{ env.GIS_DIR }}/migration/10_setup_elasticsearch.sh
+
+  # ─── SQL syntax validation ───
+  sql-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify SQL files exist and are non-empty
+        run: |
+          for f in ${{ env.GIS_DIR }}/initdb/*.sql ${{ env.GIS_DIR }}/migration/*.sql; do
+            if [ ! -s "$f" ]; then
+              echo "ERROR: $f is empty or missing"
+              exit 1
+            fi
+            echo "OK: $f ($(wc -l < "$f") lines)"
+          done
+
+  # ─── Playwright E2E test ───
+  e2e-test:
+    runs-on: ubuntu-latest
+    needs: [web-build, api-check]
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: gisdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: "false"
+          ES_JAVA_OPTS: "-Xms256m -Xmx256m"
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd "curl -sf http://localhost:9200/_cluster/health"
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize GIS database
+        run: |
+          for f in ${{ env.GIS_DIR }}/initdb/*.sql; do
+            PGPASSWORD=testpass psql -h localhost -U postgres -d gisdb -f "$f"
+          done
+
+      - name: Seed region and layers
+        run: |
+          PGPASSWORD=testpass psql -h localhost -U postgres -d gisdb -f "${{ env.GIS_DIR }}/migration/06_seed_pocheon.sql"
+          PGPASSWORD=testpass psql -h localhost -U postgres -d gisdb -f "${{ env.GIS_DIR }}/migration/09_seed_layers.sql"
+
+      - name: Seed ES index (nori-free for CI, with edge_ngram autocomplete)
+        run: |
+          curl -sf -X PUT "http://localhost:9200/gis-address" \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "settings": {
+                "number_of_shards": 1,
+                "number_of_replicas": 0,
+                "analysis": {
+                  "filter": {
+                    "edge_ngram_filter": {
+                      "type": "edge_ngram",
+                      "min_gram": 1,
+                      "max_gram": 20
+                    }
+                  },
+                  "analyzer": {
+                    "autocomplete_index": {
+                      "type": "custom",
+                      "tokenizer": "standard",
+                      "filter": ["lowercase", "edge_ngram_filter"]
+                    },
+                    "autocomplete_search": {
+                      "type": "custom",
+                      "tokenizer": "standard",
+                      "filter": ["lowercase"]
+                    }
+                  }
+                }
+              },
+              "mappings": {
+                "properties": {
+                  "region_code":  { "type": "keyword" },
+                  "region_name":  { "type": "keyword" },
+                  "source_table": { "type": "keyword" },
+                  "source_id":    { "type": "long" },
+                  "address": {
+                    "type": "text",
+                    "fields": {
+                      "autocomplete": {
+                        "type": "text",
+                        "analyzer": "autocomplete_index",
+                        "search_analyzer": "autocomplete_search"
+                      }
+                    }
+                  },
+                  "emd":    { "type": "keyword" },
+                  "ri":     { "type": "keyword" },
+                  "jibun":  { "type": "text" },
+                  "bldnm":  { "type": "text" },
+                  "location": { "type": "geo_point" }
+                }
+              }
+            }'
+          echo ""
+          echo "ES gis-address index created for CI."
+
+      - name: Seed ES test data
+        run: |
+          cat > /tmp/ci_bulk.ndjson << 'BULK'
+          {"index":{"_index":"gis-address","_id":"parcel_ci_1"}}
+          {"region_code":"POCHEON","region_name":"포천시","source_table":"gis.parcels","source_id":1,"address":"포천시 소흘읍 이동교리 58-2","emd":"소흘읍","ri":"이동교리","jibun":"58-2","location":{"lat":37.8947,"lon":127.2003}}
+          {"index":{"_index":"gis-address","_id":"parcel_ci_2"}}
+          {"region_code":"POCHEON","region_name":"포천시","source_table":"gis.parcels","source_id":2,"address":"포천시 소흘읍 이동교리 59-4","emd":"소흘읍","ri":"이동교리","jibun":"59-4","location":{"lat":37.8950,"lon":127.2010}}
+          {"index":{"_index":"gis-address","_id":"parcel_ci_3"}}
+          {"region_code":"POCHEON","region_name":"포천시","source_table":"gis.parcels","source_id":3,"address":"포천시 신읍동 59-13","emd":"신읍동","jibun":"59-13","location":{"lat":37.8960,"lon":127.1990}}
+          {"index":{"_index":"gis-address","_id":"building_ci_1"}}
+          {"region_code":"POCHEON","region_name":"포천시","source_table":"gis.buildings","source_id":1,"address":"포천시 중앙로 73","bldnm":"포천시청","location":{"lat":37.8947,"lon":127.2003}}
+          {"index":{"_index":"gis-address","_id":"building_ci_2"}}
+          {"region_code":"POCHEON","region_name":"포천시","source_table":"gis.buildings","source_id":2,"address":"포천시 소흘읍 송우리 123","bldnm":"소흘읍사무소","location":{"lat":37.8800,"lon":127.1700}}
+          BULK
+          sed -i 's/^          //' /tmp/ci_bulk.ndjson
+          curl -sf -X POST "http://localhost:9200/_bulk" \
+            -H 'Content-Type: application/x-ndjson' \
+            --data-binary "@/tmp/ci_bulk.ndjson" > /dev/null
+          curl -sf -X POST "http://localhost:9200/gis-address/_refresh"
+          echo ""
+          echo "ES CI test data indexed (5 documents)."
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Start gis-api
+        run: |
+          cd ${{ env.GIS_DIR }}/gis-api
+          pip install -r requirements.txt
+          export GIS_DATABASE_URL="postgresql+asyncpg://postgres:testpass@localhost:5432/gisdb"
+          export GIS_JWT_SECRET="ci-test-secret"
+          export GIS_REDIS_URL="redis://localhost:6379/1"
+          export GIS_ELASTICSEARCH_URL="http://localhost:9200"
+          export GIS_MINIO_ENDPOINT="localhost:9000"
+          export GIS_MINIO_ACCESS_KEY="minioadmin"
+          export GIS_MINIO_SECRET_KEY="minioadmin"
+          export GIS_MINIO_BUCKET="gis-imports"
+          export GIS_KAFKA_BOOTSTRAP="localhost:9092"
+          nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          sleep 3
+          curl -sf http://localhost:8000/api/health || exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: ${{ env.GIS_DIR }}/gis-web/package.json
+
+      - name: Build and serve gis-web
+        run: |
+          cd ${{ env.GIS_DIR }}/gis-web
+          npm install
+          VITE_API_BASE_URL=http://localhost:8000/api npm run build
+          npx serve -s dist -l 5173 &
+          sleep 2
+
+      - name: Install Playwright browsers
+        run: |
+          cd ${{ env.GIS_DIR }}/gis-web
+          npx playwright install --with-deps chromium
+
+      - name: Run E2E tests (skip full-stack tests in CI)
+        run: |
+          cd ${{ env.GIS_DIR }}/gis-web
+          E2E_BASE_URL=http://localhost:5173 npx playwright test --grep-invert="@full-stack"
+        env:
+          CI: true
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: ${{ env.GIS_DIR }}/gis-web/playwright-report/
+          retention-days: 14
+
+  # ─── Docker build test ───
+  docker-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - { name: gis-api, context: gis-api }
+          - { name: gis-web, context: gis-web }
+          - { name: gis-worker, context: gis-worker }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ${{ matrix.service.name }}
+        run: |
+          docker build \
+            -t ${{ matrix.service.name }}:ci \
+            -f ${{ env.GIS_DIR }}/${{ matrix.service.context }}/Dockerfile \
+            ${{ env.GIS_DIR }}/${{ matrix.service.context }}
