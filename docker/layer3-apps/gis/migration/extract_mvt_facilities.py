@@ -27,7 +27,11 @@ OUTPUT_DIR = Path(__file__).resolve().parent
 # --- Coordinate conversion ---
 
 def tile_coord_to_lnglat(z, tx, ty, px, py, extent=EXTENT):
-    """Convert MVT tile pixel coordinates to lng/lat (EPSG:4326)."""
+    """Convert MVT tile pixel coordinates to lng/lat (EPSG:4326).
+
+    Assumes y_coord_down=True (MVT spec convention): py=0 is the top (north)
+    of the tile, py=extent is the bottom (south).
+    """
     world_x = tx + px / extent
     world_y = ty + py / extent
     n = 2.0 ** z
@@ -103,7 +107,7 @@ def extract_tiles(tile_dir, zoom):
 
             try:
                 data = mvt_file.read_bytes()
-                decoded = mapbox_vector_tile.decode(data)
+                decoded = mapbox_vector_tile.decode(data, default_options={"y_coord_down": True})
             except Exception as e:
                 error_count += 1
                 print(f"  WARN: Failed to decode {mvt_file}: {e}", file=sys.stderr)
