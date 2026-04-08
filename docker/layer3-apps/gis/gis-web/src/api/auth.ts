@@ -11,6 +11,12 @@ export interface UserInfo {
   name: string | null;
   role: string;
   is_active: boolean;
+  approval_status: string | null;
+  upload_permission: boolean;
+  tenant_id: number | null;
+  phone: string | null;
+  department: string | null;
+  position: string | null;
   region_codes: string[];
 }
 
@@ -36,4 +42,12 @@ export function updateProfile(data: {
   new_password?: string;
 }): Promise<UserInfo> {
   return patch<UserInfo>("/v1/auth/me", data);
+}
+
+export function forgotPassword(username: string): Promise<{ message: string }> {
+  return post<{ message: string }>("/v1/auth/forgot-password", { username });
+}
+
+export function resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  return post<{ message: string }>("/v1/auth/reset-password", { token, new_password: newPassword });
 }
