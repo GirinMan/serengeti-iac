@@ -8,7 +8,6 @@ locale: "en"
 period: "2024.12 — 2026.03"
 organization: "BHSN"
 role: "AI Engineer"
-image: "/images/projects/demo-poc-applications.png"
 ---
 
 ## Overview
@@ -21,7 +20,6 @@ Built demo applications and QA tools for internal validation and external showca
 - Automated playbook uploads: implemented an end-to-end pipeline from file upload to Google Drive storage to SQL synchronization
 - Implemented per-workspace playbook overlay system: applied customer-specific custom rules on top of shared playbooks
 - Built legal workflow demo with RAG search and streaming API
-- 61 PRs contributed across 4 repositories
 
 ## Lawyer-in-the-Loop Platform
 

@@ -8,7 +8,6 @@ locale: "ko"
 period: "2022.09 — 2023.05"
 organization: "한양대학교"
 role: "학부 연구자"
-image: "/images/projects/memory-efficient-finetuning.png"
 ---
 
 ## 개요

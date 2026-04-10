@@ -8,7 +8,6 @@ locale: "ko"
 period: "2024 Q1 — 현재"
 organization: "BHSN"
 role: "AI Engineer"
-image: "/images/projects/ai-evaluation-system.png"
 ---
 
 ## 개요
@@ -32,6 +31,28 @@ image: "/images/projects/ai-evaluation-system.png"
 - 수정 정책 준수(0-2점), 문맥 일관성(0-5점), 가이드라인 반영도(3단계 검증) 등
 - 모델 앙상블 + 전문가 검토 워크플로우로 gold standard 데이터셋 구축
 
+## 대표 메트릭 개요
+
+세 축의 메트릭은 각각 다른 질문에 답하도록 설계했고, 사람이 이해할 수 있는 수준에서 대략 다음과 같은 항목들을 검토합니다.
+
+- 바꾸면 안 되는 조항을 건드리지 않았는지 "정책 준수" 관점에서 검토
+- 앞뒤 조항·정의 용어·전제와 수정 결과가 자연스럽게 이어지는지 "문맥 일관성" 관점에서 검토
+- 내부 가이드라인이 요구하는 항목들이 결과물에 제대로 반영되었는지 "가이드라인 반영도" 관점에서 검토
+- 생성된 문장이 유창한지, 문맥을 벗어나지 않는지 등 "생성 품질" 관점에서 검토
+- 정답 집합이 있는 태스크에 한해서 "얼마나 맞혔는지" 정답 기반 지표로 추가 검토
+
+## 평가 레코드의 모양 (추상화된 예시)
+
+실제 필드명·스키마와는 다르지만, 한 건의 평가가 어떤 정보를 담는지는 대략 다음 요소들의 묶음으로 이해할 수 있습니다.
+
+- **케이스 식별 정보**: 어떤 검토 건을 평가했는지 식별
+- **태스크 종류**: 조항 검토, 요약, 추출 등 어느 태스크에 해당하는지
+- **축별 판정**: 정책 준수 / 문맥 일관성 / 가이드라인 반영도 / 생성 품질 네 축에 대한 high·medium·low 수준의 판정
+- **판정 근거 요약**: "정의 조항은 건드리지 않았으나 예외 조건 한 줄이 빠져 일관성이 살짝 낮았다" 같은, 사람이 바로 이해할 수 있는 한두 줄 설명
+- **인간 검토자 동의 여부**: judge 모델 결과에 동의하는지 여부만 기록하고, 동의하지 않을 때에만 rubric 을 다시 손보는 방식
+
+이 구조 덕분에 전문가 리뷰 시간을 과도하게 소모하지 않으면서도 gold standard 데이터셋을 지속적으로 키울 수 있었습니다.
+
 ## 규모
 
 - 20+ 커스텀 메트릭을 두 개의 독립 평가 시스템에 구현
@@ -41,7 +62,7 @@ image: "/images/projects/ai-evaluation-system.png"
 
 ## 학술적 맥락
 
-LLM-as-a-Judge 평가 체계는 [MT-Bench & Chatbot Arena(Zheng et al., NeurIPS 2023)](https://arxiv.org/abs/2306.05685)가 검증한 LLM judge 패러다임 위에 구축했습니다. 해당 연구에서 밝힌 position bias와 verbosity bias 문제를 법률 도메인 특화 rubric으로 보정하며, 도메인 특화 소형 judge 모델의 비용 효율성을 실증합니다. 자체 judge 모델은 [DPO(Rafailov et al., NeurIPS 2023)](https://arxiv.org/abs/2305.18290)로 학습하여 Claude Sonnet API 호출을 자체 모델로 대체, 평가 비용을 대폭 절감했습니다.
+LLM-as-a-Judge 평가 체계는 [G-Eval(Liu et al., 2023)](https://arxiv.org/abs/2303.16634)이 제안한 chain-of-thought 기반 LLM 평가 프레임워크 위에 구축했습니다. 해당 연구가 보여준 fluency·coherence·consistency·relevance 4축 rubric을 법률 도메인 태스크에 맞춰 확장하고, 도메인 특화 소형 judge 모델의 비용 효율성을 실증합니다. 자체 judge 모델은 [DPO(Rafailov et al., NeurIPS 2023)](https://arxiv.org/abs/2305.18290)로 학습하여 Claude Sonnet API 호출을 자체 모델로 대체, 평가 비용을 대폭 절감했습니다.
 
 ## 기술 스택
 

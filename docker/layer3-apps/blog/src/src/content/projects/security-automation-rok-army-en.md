@@ -8,7 +8,6 @@ locale: "en"
 period: "2020.05 — 2021.11"
 organization: "Republic of Korea Army"
 role: "Information Security Specialist"
-image: "/images/projects/security-automation-rok-army.jpeg"
 ---
 
 ## Overview

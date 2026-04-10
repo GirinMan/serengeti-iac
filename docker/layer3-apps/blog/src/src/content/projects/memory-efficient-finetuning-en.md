@@ -8,7 +8,6 @@ locale: "en"
 period: "2022.09 — 2023.05"
 organization: "Hanyang University"
 role: "Undergraduate Researcher"
-image: "/images/projects/memory-efficient-finetuning.png"
 ---
 
 ## Overview

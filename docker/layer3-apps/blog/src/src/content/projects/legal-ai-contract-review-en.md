@@ -8,7 +8,6 @@ locale: "en"
 period: "2023.09 — Present"
 organization: "BHSN"
 role: "AI Engineer"
-image: "/images/projects/legal-ai-contract-review.png"
 ---
 
 ## Overview

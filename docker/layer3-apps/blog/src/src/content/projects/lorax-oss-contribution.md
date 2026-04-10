@@ -41,3 +41,4 @@ period: "2024.03 — 2024.10"
 ## 링크
 
 - [PR #358](https://github.com/predibase/lorax/pull/358) | [PR #374](https://github.com/predibase/lorax/pull/374) | [PR #506](https://github.com/predibase/lorax/pull/506) | [PR #644](https://github.com/predibase/lorax/pull/644)
+- 더 풍부한 PR 카드·요약 뷰는 [Achievements 페이지의 오픈소스 섹션](/achievements#opensource)에서 동일한 컴포넌트로 확인할 수 있습니다.

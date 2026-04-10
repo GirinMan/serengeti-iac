@@ -8,7 +8,6 @@ locale: "ko"
 period: "2020.05 — 2021.11"
 organization: "대한민국 육군"
 role: "정보보호병"
-image: "/images/projects/security-automation-rok-army.jpeg"
 ---
 
 ## 개요

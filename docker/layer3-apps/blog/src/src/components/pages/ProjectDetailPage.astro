@@ -2,6 +2,7 @@
 import Layout from "../Layout.astro";
 import { render } from "astro:content";
 import { t } from "../../i18n";
+import OpenSourceLoraxSection from "../OpenSourceLoraxSection.astro";
 
 interface Props {
   locale: "ko" | "en";
@@ -11,6 +12,7 @@ interface Props {
 const { locale, project } = Astro.props;
 const { Content } = await render(project);
 const { title, description, tags, period, organization, role, repoUrl, href, image } = project.data;
+const showLoraxOssSection = /^lorax-oss-contribution(-en)?$/.test(project.id);
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 const layoutTitle = locale === "ko" ? `${title} — 이성진` : `${title} — Seongjin Lee`;
@@ -119,5 +121,19 @@ const backHref = locale === "ko" ? `${base}/projects` : `${base}/en/projects`;
     ">
       <Content />
     </div>
+
+    {showLoraxOssSection && (
+      <section class="mt-12">
+        <h2 class="text-xl font-bold text-[var(--color-text-primary)] mb-4 border-b border-[var(--color-border)] pb-2" style="font-family: var(--font-display);">
+          {locale === "ko" ? "오픈소스 PR 상세" : "Open-source PR details"}
+        </h2>
+        <p class="text-sm text-[var(--color-text-secondary)] mb-4">
+          {locale === "ko"
+            ? "아래 카드들은 Achievements 페이지의 오픈소스 섹션과 동일한 컴포넌트에서 직접 렌더링된 것입니다."
+            : "The cards below are rendered from the same component used in the Achievements page's open-source section."}
+        </p>
+        <OpenSourceLoraxSection locale={locale} headingless={true} />
+      </section>
+    )}
   </article>
 </Layout>

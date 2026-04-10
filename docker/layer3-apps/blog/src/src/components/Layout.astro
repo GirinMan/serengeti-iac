@@ -3,6 +3,7 @@ import "../styles/global.css";
 import { ClientRouter } from "astro:transitions";
 import { type Locale, t, getLocaleFromUrl, localePath, getAlternateLocale } from "../i18n";
 import GiraffeBackground from "./GiraffeBackground.astro";
+import GiraffeIcon from "./GiraffeIcon.astro";
 
 interface Props {
   title: string;
@@ -41,8 +42,7 @@ const altCanonicalUrl = new URL(altUrl, siteUrl).href;
 <html lang={locale}>
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
-    <link rel="icon" href={`${base}/favicon.ico`} />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg?v=3`} />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
@@ -85,7 +85,9 @@ const altCanonicalUrl = new URL(altUrl, siteUrl).href;
     <header class="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg-primary)]/80 backdrop-blur-md">
       <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4" aria-label={t(locale, "a11y.mainNav")}>
         <a href={localePath(locale, "/")} class="flex items-center gap-2 text-lg font-bold tracking-tight text-[var(--color-text-primary)] hover:text-[var(--color-accent-light)] transition-colors" style="font-family: var(--font-display);">
-          <span class="font-mono text-[var(--color-accent)] text-sm" aria-hidden="true">🦒</span>
+          <span class="text-[var(--color-accent)] inline-flex items-center" aria-hidden="true">
+            <GiraffeIcon size={22} />
+          </span>
           girinman
         </a>
 
@@ -209,8 +211,13 @@ const altCanonicalUrl = new URL(altUrl, siteUrl).href;
         </div>
 
         <div class="mt-6 flex flex-col items-center gap-1 text-xs text-[var(--color-text-muted)]">
-          <p class="font-mono">&copy; {new Date().getFullYear()} 🦒 girinman (Seongjin Lee). {t(locale, "footer.rights")}</p>
-          <p class="font-mono">{t(locale, "footer.builtWith")}</p>
+          <p class="font-mono inline-flex items-center gap-1.5">
+            &copy; {new Date().getFullYear()}
+            <span class="text-[var(--color-accent)] inline-flex items-center" aria-hidden="true">
+              <GiraffeIcon size={14} />
+            </span>
+            girinman (Seongjin Lee). {t(locale, "footer.rights")}
+          </p>
         </div>
       </div>
     </footer>

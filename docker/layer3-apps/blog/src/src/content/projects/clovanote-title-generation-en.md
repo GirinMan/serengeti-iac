@@ -8,7 +8,6 @@ locale: "en"
 period: "2022.12 — 2023.02"
 organization: "NAVER / NAVER Cloud"
 role: "AI Research Engineer (Intern)"
-image: "/images/projects/clovanote-title-generation.jpg"
 ---
 
 ## Overview

@@ -43,4 +43,6 @@ role: "AI Engineer"
 
 ## 기술 스택
 
-TypeScript, Vite, WebView, HWP Add-on SDK, REST API, Playwright (API 캡처), Confluence, **AI-assisted development** (Claude Code, Cursor)
+TypeScript, Vite, WebView, HWP Add-on SDK, REST API, Playwright (API 캡처), Confluence.
+
+이 프로젝트는 **Fully AI-generated code** 방식으로 수행했습니다. 사람이 직접 타이핑하는 코드를 최소화하고, Claude Code · Cursor 같은 AI 코딩 에이전트가 실제 구현을 담당하도록 구성했습니다. 그 과정에서 `allibee-brand-guideline` 과 같은 전용 스킬을 별도로 구성해, 여러 에이전트 세션에 걸쳐서도 UI 톤, 컴포넌트 명명, 문구 스타일, 로고·컬러 사용 규칙 등 개발 결과물의 통일성이 유지되도록 했습니다. 덕분에 낯선 기술 스택과 4주 MVP 일정이라는 제약 아래에서도 일관된 품질의 결과물을 확보할 수 있었습니다.

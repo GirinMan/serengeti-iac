@@ -57,21 +57,13 @@ const careers = locale === "ko" ? careersKo : careersEn;
 const heroName = locale === "ko" ? profile.name.ko : profile.name.en;
 const heroTagline = locale === "ko" ? profileKo.tagline : profile.tagline;
 
-const heroHighlightsKo = [
-  "GPU 인프라 · 모델 서빙 최적화 · 오픈소스 기여",
-  "자체 모델 학습 & 평가 파이프라인",
-  "워크플로우 · 에이전트 · 제품 통합",
-  "변호사 등 비개발자를 제품 개발 프로세스에 직접 참여시키는 협업 & 외부 파트너 소통",
+// Hero 하이라이트는 About 페이지의 "핵심 강점" 과 단일 출처로 묶어둔다.
+const heroHighlights = [
+  t(locale, "about.strength1"),
+  t(locale, "about.strength2"),
+  t(locale, "about.strength3"),
+  t(locale, "about.strength4"),
 ];
-
-const heroHighlightsEn = [
-  "GPU infrastructure, model serving optimization & open-source contributions",
-  "In-house model training & evaluation pipelines",
-  "Workflow, agent & product integration",
-  "Bringing non-engineers (lawyers) into the product development process & cross-company partner collaboration",
-];
-
-const heroHighlights = locale === "ko" ? heroHighlightsKo : heroHighlightsEn;
 const careerHeading = locale === "ko" ? "경력" : "Career";
 const viewAllCareer = locale === "ko" ? "전체 보기" : "View all";
 

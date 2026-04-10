@@ -26,8 +26,13 @@ const config = categoryConfig[category] ?? categoryConfig.award;
 // Format date for display
 const displayDate = date.length === 4 ? date : date.length === 7 ? date : date;
 
-// Split description into bullets by sentence
-const bullets = description.split(/[.。]\s*/).map((s) => s.trim()).filter(Boolean);
+// Split description into bullets by sentence.
+// 주의: "4.14/4.50" 같은 소수점이나 "LLM.int8()" 같은 약어 속 마침표에서는 쪼개지 않도록
+// 앞에 숫자가 오지 않고, 뒤에 공백(또는 문자열 끝)이 오는 경우에만 분리한다.
+const bullets = description
+  .split(/(?<!\d)[.。](?:\s+|$)/)
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 ---
 

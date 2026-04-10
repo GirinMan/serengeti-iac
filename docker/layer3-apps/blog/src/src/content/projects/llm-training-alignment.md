@@ -8,7 +8,6 @@ locale: "ko"
 period: "2023.09 — 2026.01"
 organization: "BHSN"
 role: "AI Engineer"
-image: "/images/projects/llm-training-alignment.png"
 ---
 
 ## 개요

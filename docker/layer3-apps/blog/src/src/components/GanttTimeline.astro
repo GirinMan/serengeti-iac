@@ -26,13 +26,9 @@ const years = [
   { label: "2026", span: 2 },
 ];
 
-// Current time marker: 2026 Q2 = index 11 (last quarter)
-// Bars that extend to or past Q10 (2026 Q1) with ongoing=true get future styling
-const NOW_Q = 10; // 2026 Q1 is approximately "now"
-
 const bars: GanttBar[] = [
   {
-    id: "contract-ai", label: "Legal LLM 고도화", labelEn: "Legal LLM Enhancement",
+    id: "contract-ai", label: "AI 계약서 검토 시스템", labelEn: "AI Contract Review System",
     startQ: 0, endQ: 11, colorVar: "var(--color-accent-light)",
     highlight: true, ongoing: true,
   },
@@ -64,7 +60,6 @@ const bars: GanttBar[] = [
 ];
 
 const sectionTitle = locale === "ko" ? "프로젝트 타임라인" : "Project Timeline";
-const nowLabel = locale === "ko" ? "현재" : "Now";
 ---
 
 <div class="gantt-container">
@@ -100,9 +95,6 @@ const nowLabel = locale === "ko" ? "현재" : "Now";
       const leftPct = (bar.startQ / TOTAL_QUARTERS) * 100;
       const widthPct = ((bar.endQ - bar.startQ + 1) / TOTAL_QUARTERS) * 100;
       const barLabel = locale === "ko" ? bar.label : bar.labelEn;
-      // Calculate future portion for ongoing bars that extend past NOW_Q
-      const hasFuture = bar.ongoing && bar.endQ > NOW_Q;
-      const futureSplitPct = hasFuture ? ((NOW_Q - bar.startQ + 1) / (bar.endQ - bar.startQ + 1)) * 100 : 100;
 
       return (
         <div class="gantt-row" data-bar-id={bar.id}>
@@ -117,25 +109,16 @@ const nowLabel = locale === "ko" ? "현재" : "Now";
                 style={`left: ${(i / TOTAL_QUARTERS) * 100}%`}
               ></div>
             ))}
-            {/* "Now" marker */}
-            <div class="gantt-now" style={`left: ${((10.5) / TOTAL_QUARTERS) * 100}%`}>
-              <div class="gantt-now-line"></div>
-              <span class="gantt-now-label">{nowLabel}</span>
-            </div>
             {/* The bar */}
             <div
               class:list={[
                 "gantt-bar",
                 bar.highlight && "gantt-bar--highlight",
-                bar.ongoing && "gantt-bar--ongoing",
-                hasFuture && "gantt-bar--has-future",
               ]}
-              style={`left: ${leftPct}%; width: ${widthPct}%; --bar-color: ${bar.colorVar}; --future-split: ${futureSplitPct}%;`}
+              style={`left: ${leftPct}%; width: ${widthPct}%; --bar-color: ${bar.colorVar};`}
               title={barLabel}
             >
               <div class="gantt-bar-fill"></div>
-              {hasFuture && <div class="gantt-bar-future" aria-hidden="true"></div>}
-              {bar.ongoing && <div class="gantt-bar-pulse" aria-hidden="true"></div>}
             </div>
           </div>
         </div>
@@ -313,34 +296,6 @@ const nowLabel = locale === "ko" ? "현재" : "Now";
     background: var(--color-border-hover);
   }
 
-  /* "Now" marker */
-  .gantt-now {
-    position: absolute;
-    top: -8px;
-    bottom: -4px;
-    z-index: 5;
-  }
-
-  .gantt-now-line {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 2px;
-    background: var(--color-accent);
-    opacity: 0.6;
-  }
-
-  .gantt-now-label {
-    position: absolute;
-    top: -14px;
-    left: -10px;
-    font-family: var(--font-mono);
-    font-size: 0.5rem;
-    color: var(--color-accent);
-    white-space: nowrap;
-  }
-
   /* ---- The bar itself ---- */
   .gantt-bar {
     position: absolute;
@@ -371,57 +326,6 @@ const nowLabel = locale === "ko" ? "현재" : "Now";
 
   .gantt-bar--highlight .gantt-bar-fill {
     border-color: var(--bar-color);
-  }
-
-  /* Ongoing pulse at right edge */
-  .gantt-bar--ongoing {
-    border-right: 2px dashed color-mix(in srgb, var(--bar-color) 50%, transparent);
-  }
-
-  .gantt-bar-pulse {
-    position: absolute;
-    right: -1px;
-    top: 0;
-    bottom: 0;
-    width: 6px;
-    background: var(--bar-color);
-    animation: ganttPulse 2s ease-in-out infinite;
-    border-radius: 0 4px 4px 0;
-  }
-
-  @keyframes ganttPulse {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.8; }
-  }
-
-  /* Future portion — dashed/striped overlay past the "now" line */
-  .gantt-bar--has-future .gantt-bar-fill {
-    mask-image: linear-gradient(90deg, #000 var(--future-split), transparent var(--future-split));
-    -webkit-mask-image: linear-gradient(90deg, #000 var(--future-split), transparent var(--future-split));
-  }
-
-  .gantt-bar-future {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: var(--future-split);
-    right: 0;
-    background: repeating-linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--bar-color) 30%, transparent) 0px,
-      color-mix(in srgb, var(--bar-color) 30%, transparent) 4px,
-      transparent 4px,
-      transparent 8px
-    );
-    border-radius: 0 4px 4px 0;
-    border: 1px dashed color-mix(in srgb, var(--bar-color) 40%, transparent);
-    border-left: none;
-    animation: ganttFuturePulse 3s ease-in-out infinite;
-  }
-
-  @keyframes ganttFuturePulse {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 0.7; }
   }
 
   /* ========= MOBILE VERTICAL STACK ========= */
@@ -492,11 +396,4 @@ const nowLabel = locale === "ko" ? "현재" : "Now";
     color: var(--color-text-muted);
   }
 
-  /* ========= REDUCED MOTION ========= */
-  @media (prefers-reduced-motion: reduce) {
-    .gantt-bar-pulse {
-      animation: none;
-      opacity: 0.5;
-    }
-  }
 </style>

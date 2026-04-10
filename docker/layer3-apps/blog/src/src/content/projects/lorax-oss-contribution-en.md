@@ -41,3 +41,4 @@ These were not standalone OSS activities but direct solutions to serving interfa
 ## Links
 
 - [PR #358](https://github.com/predibase/lorax/pull/358) | [PR #374](https://github.com/predibase/lorax/pull/374) | [PR #506](https://github.com/predibase/lorax/pull/506) | [PR #644](https://github.com/predibase/lorax/pull/644)
+- A richer PR card and summary view is available from the same component on the [Achievements page — Open Source section](/en/achievements#opensource).

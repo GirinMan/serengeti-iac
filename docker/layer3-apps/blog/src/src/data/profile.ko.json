@@ -3,9 +3,9 @@
     "en": "Seongjin Lee",
     "ko": "이성진"
   },
-  "tagline": "AI 엔지니어 — LLM 시스템 · Legal AI · 워크플로우 & 에이전트 플랫폼",
-  "bio": "법률 문서 인텔리전스를 위한 프로덕션 LLM 시스템과 AI 워크플로우/에이전트 플랫폼을 구축하는 AI 엔지니어. 계약서 검토 AI(특허 등록), 셀프서브 플레이북 플랫폼, 법률 서면·계약서 작성·비교 검토·인허가 규제 검토 등 실무 업무를 워크플로우화한 LangGraph 기반 엔진을 출시. 계약 분석 벤치마크를 직접 설계하고 이를 기반으로 도메인 특화 모델을 학습·서비스에 적용. predibase/lorax에 4개 PR 머지.",
-  "heroSubtitle": "계약서 검토부터 에이전트 워크플로우까지 — 법률 전문가를 위한 프로덕션 AI 시스템 구축",
+  "tagline": "비즈니스 도메인 특화 LLM 서비스 엔지니어",
+  "bio": "BHSN에서 계약서 검토 AI, 법률 검색, business document LLM, structured output 기반 서비스 설계, AI 평가 체계, workflow·agent 플랫폼, self-serve 운영 도구까지 폭넓게 다루고 있습니다. 모델을 학습시키는 것에 그치지 않고, 계약서 등 전문 문서 기반 AI 문제를 실제 제품과 운영 가능한 형태로 연결하는 일에 더 큰 관심이 있습니다. 최근에는 법률 전문가와 함께 정의한 rubric을 바탕으로 전통 정량 지표와 LLM-as-a-Judge를 결합한 평가 체계를 설계하고, 변호사·비개발 운영자가 직접 prompt·template·workflow·playbook을 수정·테스트할 수 있는 internal tooling을 구축해 왔습니다.",
+  "heroSubtitle": "전문 문서 기반 AI 문제를 실제 제품과 운영으로 연결하는 일",
   "links": {
     "github": "https://github.com/GirinMan",
     "linkedin": "https://www.linkedin.com/in/girinman",

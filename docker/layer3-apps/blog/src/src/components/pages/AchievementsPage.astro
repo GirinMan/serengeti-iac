@@ -1,6 +1,7 @@
 ---
 import Layout from "../Layout.astro";
 import AchievementCard from "../AchievementCard.astro";
+import OpenSourceLoraxSection from "../OpenSourceLoraxSection.astro";
 import { getCollection } from "astro:content";
 import { t, localePath } from "../../i18n";
 import { getOssPrs } from "../../data/opensource-prs";
@@ -173,82 +174,10 @@ const layoutDescription = locale === "ko" ? "수상, 특허, 자격증, 발표 �
         </div>
       ))}
 
-      {/* ===== Open Source Contributions Section ===== */}
+      {/* ===== Open Source Contributions Section (shared component) ===== */}
       {grouped["opensource"]?.length > 0 && (
-        <div class="achv-group" data-achv-group="opensource">
-          <div class="achv-group-heading">
-            <span
-              class="achv-group-icon-badge"
-              style={`background: ${categoryConfig.opensource.bgAlpha}; border-color: ${categoryConfig.opensource.color}30;`}
-              aria-hidden="true"
-            >
-              {categoryConfig.opensource.icon}
-            </span>
-            <h2 class="achv-group-title">{categoryConfig.opensource.label}</h2>
-            <span class="achv-group-count">{ossPrs.length} PRs</span>
-          </div>
-
-          {/* OSS Summary */}
-          <div class="oss-summary" data-achv-category="opensource">
-            <div class="oss-summary-grid">
-              <div>
-                <p class="oss-summary-label">{t(locale, "opensource.summary.repo")}</p>
-                <a href="https://github.com/predibase/lorax" target="_blank" rel="noopener" class="oss-summary-value oss-summary-link">
-                  predibase/lorax
-                </a>
-              </div>
-              <div>
-                <p class="oss-summary-label">{t(locale, "opensource.summary.prs")}</p>
-                <p class="oss-summary-value">4 PRs</p>
-              </div>
-              <div>
-                <p class="oss-summary-label">{t(locale, "opensource.summary.period")}</p>
-                <p class="oss-summary-value">2024.03 — 2024.10</p>
-              </div>
-              <div>
-                <p class="oss-summary-label">{t(locale, "opensource.summary.theme")}</p>
-                <p class="oss-summary-value">{t(locale, "opensource.summary.themeValue")}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* PR Cards */}
-          <div class="space-y-3" data-achv-category="opensource">
-            {ossPrs.map((pr) => (
-              <article class="oss-pr-card" data-achv-category="opensource">
-                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
-                  <div class="flex-1">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="font-mono text-xs text-[var(--color-terminal-green)]">#{pr.number}</span>
-                      <h3 class="text-sm font-bold text-[var(--color-text-primary)]" style="font-family: var(--font-display);">
-                        {pr.title}
-                      </h3>
-                    </div>
-                    <p class="mt-1 text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                      {pr.description}
-                    </p>
-                    <div class="mt-2 flex flex-wrap gap-1">
-                      {pr.tags.map((tag) => (
-                        <span class="tag-pill rounded-full px-2 py-0.5 text-xs font-mono">{tag}</span>
-                      ))}
-                    </div>
-                    <div class="mt-2 flex gap-3 text-xs font-mono">
-                      <a href={localePath(locale, `/opensource/${pr.slug}`)} class="text-[var(--color-accent-light)] hover:underline">
-                        {t(locale, "opensource.viewDetail")} &rarr;
-                      </a>
-                      <a href={pr.prUrl} target="_blank" rel="noopener" class="text-[var(--color-text-muted)] hover:text-[var(--color-accent-light)]">
-                        {t(locale, "opensource.viewPr")} &nearr;
-                      </a>
-                    </div>
-                  </div>
-                  <div class="hidden md:block md:text-right shrink-0">
-                    <p class="font-mono text-xs text-[var(--color-terminal-green)]">{t(locale, "opensource.merged")}</p>
-                    <p class="font-mono text-xs text-[var(--color-text-muted)]">{pr.mergedDate}</p>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+        <div id="opensource">
+          <OpenSourceLoraxSection locale={locale} />
         </div>
       )}
 
@@ -378,7 +307,9 @@ const layoutDescription = locale === "ko" ? "수상, 특허, 자격증, 발표 �
       });
 
       allGroups.forEach(g => {
-        if (g.dataset.achvGroup === cat) {
+        // 합쳐진 그룹(예: "patent-competition") 도 각 카테고리 필터에 보이도록 한다.
+        const groupCats = (g.dataset.achvGroup || '').split('-');
+        if (groupCats.includes(cat)) {
           g.style.display = '';
         } else {
           g.style.display = 'none';

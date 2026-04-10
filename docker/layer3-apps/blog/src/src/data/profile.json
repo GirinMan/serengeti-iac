@@ -3,9 +3,9 @@
     "en": "Seongjin Lee",
     "ko": "이성진"
   },
-  "tagline": "AI Engineer — LLM Systems · Legal AI · Workflow & Agent Platform",
-  "bio": "AI Engineer building production LLM systems and AI workflow/agent platforms for legal document intelligence. Shipped contract review AI (patent-registered), a self-serve playbook platform, and a LangGraph-based workflow engine covering legal brief drafting, contract authoring, comparison review, and regulatory compliance. Designed contract analysis benchmarks and trained domain-specific models deployed in production. Contributed 4 merged PRs to predibase/lorax.",
-  "heroSubtitle": "Building production AI systems — from contract review to agentic workflows for legal professionals",
+  "tagline": "LLM service engineer for specialized business domains",
+  "bio": "At BHSN, I work across a wide range of legal and business document AI: contract review, legal search, business document LLMs, structured-output service design, evaluation systems, workflow/agent platforms, and self-serve operational tooling. Beyond training models, I'm more interested in turning AI on professional documents into something that actually ships as a product and runs in operations. Recently, I've designed evaluation systems combining traditional quantitative metrics with LLM-as-a-Judge on top of rubrics defined together with legal experts, and built internal tooling that lets lawyers and non-developer operators directly edit and test prompts, templates, workflows, and playbooks.",
+  "heroSubtitle": "Connecting AI on professional documents to real products and operations",
   "links": {
     "github": "https://github.com/GirinMan",
     "linkedin": "https://www.linkedin.com/in/girinman",

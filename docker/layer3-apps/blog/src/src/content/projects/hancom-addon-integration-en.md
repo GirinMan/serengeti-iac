@@ -43,4 +43,6 @@ By reusing the existing allibee web app's API infrastructure, a new add-on app o
 
 ## Tech Stack
 
-TypeScript, Vite, WebView, HWP Add-on SDK, REST API, Playwright (API capture), Confluence, **AI-assisted development** (Claude Code, Cursor)
+TypeScript, Vite, WebView, HWP Add-on SDK, REST API, Playwright (API capture), Confluence.
+
+This project was delivered as **fully AI-generated code**. Hand-written code was kept to a minimum and the actual implementation was carried out by AI coding agents such as Claude Code and Cursor. To keep the output consistent across many agent sessions, a dedicated skill like `allibee-brand-guideline` was configured to enforce shared rules for UI tone, component naming, copy style, logo and color usage, and so on. That made it possible to land a coherent result even under an unfamiliar stack and a tight 4-week MVP timeline.

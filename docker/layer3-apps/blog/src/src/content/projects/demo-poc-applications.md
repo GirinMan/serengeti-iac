@@ -8,7 +8,6 @@ locale: "ko"
 period: "2024.12 — 2026.03"
 organization: "BHSN"
 role: "AI Engineer"
-image: "/images/projects/demo-poc-applications.png"
 ---
 
 ## 개요
@@ -21,7 +20,6 @@ image: "/images/projects/demo-poc-applications.png"
 - 플레이북 업로드 자동화: 파일 업로드 → Google Drive 저장 → SQL 반영까지 자동 파이프라인 구현
 - 워크스페이스별 플레이북 overlay 시스템 구현: 공통 플레이북 위에 고객별 커스텀 규칙 적용
 - RAG 검색 및 스트리밍 API 기반 법률 워크플로우 데모 구축
-- 4개 레포에 걸쳐 61개 PR 기여
 
 ## Lawyer-in-the-Loop 플랫폼
 
