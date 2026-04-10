@@ -12,7 +12,7 @@ role: "Information Security Specialist"
 
 ## Overview
 
-Served 18 months as an Information Security Specialist (MOS 175104) in the Integrated Security Operations Center of the III Corps 103rd Signal Battalion Cyber Defense Unit, Republic of Korea Army. Managed intranet servers, UTM monitoring, and security log analysis in an air-gapped environment, and independently developed tools to automate repetitive tasks.
+Served 18 months as an Information Security Specialist (MOS 175104) in the Cyber Defense Division of a corps-level unit of the Republic of Korea Army. Managed intranet servers, UTM monitoring, and security log analysis in an air-gapped environment, and independently developed tools to automate repetitive tasks.
 
 ## Key Achievements
 
