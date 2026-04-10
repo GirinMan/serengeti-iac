@@ -1,0 +1,123 @@
+---
+import Layout from "../Layout.astro";
+import { render } from "astro:content";
+import { t } from "../../i18n";
+
+interface Props {
+  locale: "ko" | "en";
+  project: any;
+}
+
+const { locale, project } = Astro.props;
+const { Content } = await render(project);
+const { title, description, tags, period, organization, role, repoUrl, href, image } = project.data;
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const layoutTitle = locale === "ko" ? `${title} — 이성진` : `${title} — Seongjin Lee`;
+const backText = locale === "ko" ? "프로젝트 목록" : "Projects";
+const backHref = locale === "ko" ? `${base}/projects` : `${base}/en/projects`;
+---
+
+<Layout title={layoutTitle} description={description} locale={locale}>
+  <article class="mx-auto max-w-3xl px-6 py-16">
+    {/* Back link */}
+    <a
+      href={backHref}
+      class="inline-flex items-center gap-1.5 text-sm font-mono text-[var(--color-text-muted)] hover:text-[var(--color-accent-light)] transition-colors mb-8"
+    >
+      <span aria-hidden="true">&larr;</span> {backText}
+    </a>
+
+    {/* Header */}
+    <header class="mb-10">
+      <h1 class="text-3xl font-bold text-[var(--color-text-primary)]" style="font-family: var(--font-display);">
+        {title}
+      </h1>
+      <p class="mt-3 text-base leading-relaxed text-[var(--color-text-secondary)]">
+        {description}
+      </p>
+
+      {/* Meta info */}
+      {(period || organization || role) && (
+        <div class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm font-mono text-[var(--color-text-muted)]">
+          {period && (
+            <span class="flex items-center gap-1.5">
+              <span class="text-[var(--color-accent-dark)]" aria-hidden="true">▸</span>
+              {period}
+            </span>
+          )}
+          {organization && (
+            <span class="flex items-center gap-1.5">
+              <span class="text-[var(--color-accent-dark)]" aria-hidden="true">▸</span>
+              {organization}
+            </span>
+          )}
+          {role && (
+            <span class="flex items-center gap-1.5">
+              <span class="text-[var(--color-accent-dark)]" aria-hidden="true">▸</span>
+              {role}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Tags */}
+      {tags.length > 0 && (
+        <div class="mt-5 flex flex-wrap gap-2">
+          {tags.map((tag) => (
+            <span class="tag-pill rounded-full px-3 py-1 text-xs font-medium font-mono">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Links */}
+      {(repoUrl || href) && (
+        <div class="mt-5 flex gap-4 text-sm font-mono">
+          {href && (
+            <a href={href} class="text-[var(--color-accent-light)] hover:text-[var(--color-accent)] hover:underline transition-colors" target="_blank" rel="noopener">
+              demo &rarr;
+            </a>
+          )}
+          {repoUrl && (
+            <a href={repoUrl} class="text-[var(--color-text-muted)] hover:text-[var(--color-accent-light)] transition-colors" target="_blank" rel="noopener">
+              src/
+            </a>
+          )}
+        </div>
+      )}
+    </header>
+
+    {/* Project image */}
+    {image && (
+      <figure class="mb-10">
+        <img
+          src={`${base}${image}`}
+          alt={title}
+          class="w-full max-h-96 object-contain rounded-lg border border-[var(--color-border)] bg-[#0a0a0f]"
+          loading="lazy"
+        />
+      </figure>
+    )}
+
+    {/* Divider */}
+    <hr class="border-[var(--color-border)] mb-10" />
+
+    {/* Rendered markdown body */}
+    <div class="prose prose-invert prose-sm max-w-none
+      prose-headings:text-[var(--color-text-primary)] prose-headings:font-bold
+      prose-h2:text-xl prose-h2:mt-10 prose-h2:mb-4 prose-h2:border-b prose-h2:border-[var(--color-border)] prose-h2:pb-2
+      prose-h3:text-base prose-h3:mt-6 prose-h3:mb-3
+      prose-p:text-[var(--color-text-secondary)] prose-p:leading-relaxed
+      prose-li:text-[var(--color-text-secondary)]
+      prose-strong:text-[var(--color-text-primary)]
+      prose-a:text-[var(--color-accent-light)] prose-a:no-underline hover:prose-a:underline
+      prose-code:text-[var(--color-accent-light)] prose-code:bg-[var(--color-accent)]/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-mono
+      prose-hr:border-[var(--color-border)]
+      prose-table:text-sm prose-th:text-[var(--color-text-primary)] prose-td:text-[var(--color-text-secondary)]
+    ">
+      <Content />
+    </div>
+  </article>
+</Layout>

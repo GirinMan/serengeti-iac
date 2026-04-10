@@ -1,0 +1,92 @@
+---
+interface Props {
+  title: string;
+  category: "patent" | "award" | "certification" | "speaking" | "competition" | "opensource";
+  date: string;
+  description: string;
+  url?: string;
+  image?: string;
+  issuer?: string;
+}
+
+const { title, category, date, description, url, image, issuer } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+const categoryConfig: Record<string, { icon: string; color: string }> = {
+  patent: { icon: "📜", color: "var(--color-accent)" },
+  award: { icon: "🏆", color: "#e8c88a" },
+  certification: { icon: "🎓", color: "var(--color-skill-intermediate)" },
+  speaking: { icon: "🎤", color: "var(--color-skill-advanced)" },
+  competition: { icon: "🥇", color: "var(--color-skill-expert)" },
+  opensource: { icon: "🔓", color: "var(--color-terminal-green)" },
+};
+
+const config = categoryConfig[category] ?? categoryConfig.award;
+
+// Format date for display
+const displayDate = date.length === 4 ? date : date.length === 7 ? date : date;
+
+// Split description into bullets by sentence
+const bullets = description.split(/[.。]\s*/).map((s) => s.trim()).filter(Boolean);
+
+---
+
+<article
+  class:list={[
+    "card-glow group relative block rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 transition-all duration-300 hover:border-[var(--color-accent-dark)] hover:bg-[var(--color-bg-hover)] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-accent)]/5",
+    url && "cursor-pointer",
+  ]}
+>
+  {url && <a href={url} target="_blank" rel="noopener" class="absolute inset-0 z-10" aria-label={title}></a>}
+  <div class="flex items-start gap-4">
+    <!-- Icon badge -->
+    <div
+      class="flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-lg text-xl leading-none text-center"
+      style={`background: ${config.color}15; border: 1px solid ${config.color}30;`}
+      aria-hidden="true"
+    >
+      {config.icon}
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 flex-wrap">
+        <h3 class="text-base font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent-light)] transition-colors leading-snug" style="font-family: var(--font-display);">
+          {title}
+          {url && <span class="inline-block ml-1 text-xs opacity-50" aria-hidden="true">&nearr;</span>}
+        </h3>
+      </div>
+
+      <div class="mt-1.5 flex items-center gap-3 text-xs text-[var(--color-text-muted)] font-mono">
+        <time>{displayDate}</time>
+        {issuer && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>{issuer}</span>
+          </>
+        )}
+      </div>
+
+      <ul class="mt-2 space-y-0.5">
+        {bullets.map((b) => (
+          <li class="flex items-start gap-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+            <span class="mt-1.5 h-1 w-1 rounded-full bg-[var(--color-text-muted)] shrink-0" aria-hidden="true"></span>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+
+  {image && (
+    <div class="mt-4 rounded-lg overflow-hidden border border-[var(--color-border)] relative">
+      <div class="absolute inset-0 bg-[var(--color-accent)]/10 mix-blend-color pointer-events-none z-10"></div>
+      <img
+        src={`${base}${image}`}
+        alt={title}
+        class="w-full h-auto object-cover max-h-48 grayscale-[40%] sepia-[20%] opacity-90"
+        loading="lazy"
+      />
+    </div>
+  )}
+</article>

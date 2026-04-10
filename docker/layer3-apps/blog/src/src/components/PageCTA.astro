@@ -1,0 +1,42 @@
+---
+import { type Locale, t, localePath } from "../i18n";
+
+interface CTALink {
+  label: string;
+  href: string;
+  primary?: boolean;
+}
+
+interface Props {
+  locale: Locale;
+  links: CTALink[];
+}
+
+const { locale, links } = Astro.props;
+---
+
+<div class="mt-16 pt-10 border-t border-[var(--color-border)]">
+  <p class="text-sm font-mono text-[var(--color-text-muted)] mb-4">{t(locale, "cta.next")}</p>
+  <div class="flex flex-wrap gap-3">
+    {links.map((link) =>
+      link.primary ? (
+        <a
+          href={localePath(locale, link.href)}
+          class="group inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-bg-primary)] transition-all hover:bg-[var(--color-accent-light)] hover:shadow-lg hover:shadow-[var(--color-accent)]/20"
+          style="font-family: var(--font-display);"
+        >
+          {link.label}
+          <span class="transition-transform group-hover:translate-x-0.5">&rarr;</span>
+        </a>
+      ) : (
+        <a
+          href={localePath(locale, link.href)}
+          class="group inline-flex items-center gap-2 rounded-lg border border-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-accent)] transition-all hover:bg-[var(--color-accent)]/10 hover:text-[var(--color-accent-light)]"
+          style="font-family: var(--font-display);"
+        >
+          {link.label}
+        </a>
+      )
+    )}
+  </div>
+</div>

@@ -1,0 +1,24 @@
+{
+  "name": {
+    "en": "Seongjin Lee",
+    "ko": "이성진"
+  },
+  "tagline": "AI Engineer — LLM Systems · Legal AI · Workflow & Agent Platform",
+  "bio": "AI Engineer building production LLM systems and AI workflow/agent platforms for legal document intelligence. Shipped contract review AI (patent-registered), a self-serve playbook platform, and a LangGraph-based workflow engine covering legal brief drafting, contract authoring, comparison review, and regulatory compliance. Designed contract analysis benchmarks and trained domain-specific models deployed in production. Contributed 4 merged PRs to predibase/lorax.",
+  "heroSubtitle": "Building production AI systems — from contract review to agentic workflows for legal professionals",
+  "links": {
+    "github": "https://github.com/GirinMan",
+    "linkedin": "https://www.linkedin.com/in/girinman",
+    "huggingface": "https://huggingface.co/GirinMan",
+    "email": "lsjg9909@hanyang.ac.kr"
+  },
+  "location": "South Korea",
+  "currentRole": "AI Engineer at BHSN",
+  "education": {
+    "school": "Hanyang University",
+    "degree": "B.Eng. in Computer Software",
+    "period": "2018 - 2023",
+    "gpa": "4.14 / 4.50",
+    "honors": ["Summa Cum Laude", "Early Graduation (1 semester ahead)", "Full Scholarship (4 semesters)"]
+  }
+}

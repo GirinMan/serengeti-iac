@@ -1,0 +1,274 @@
+---
+import "../styles/global.css";
+import { ClientRouter } from "astro:transitions";
+import { type Locale, t, getLocaleFromUrl, localePath, getAlternateLocale } from "../i18n";
+import GiraffeBackground from "./GiraffeBackground.astro";
+
+interface Props {
+  title: string;
+  description?: string;
+  locale?: Locale;
+}
+
+const { title, description = "AI 엔지니어 이성진 — LLM 서빙, RAG 파이프라인, MLOps 전문 포트폴리오", locale: localeProp } = Astro.props;
+
+const locale: Locale = localeProp ?? getLocaleFromUrl(Astro.url);
+const altLocale = getAlternateLocale(locale);
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const siteUrl = import.meta.env.SITE ?? "https://girinman.github.io";
+const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
+const ogLocale = locale === "ko" ? "ko_KR" : "en_US";
+
+const navItems = [
+  { label: t(locale, "nav.about"), href: "/about" },
+  { label: t(locale, "nav.career"), href: "/career" },
+  { label: t(locale, "nav.projects"), href: "/projects" },
+  { label: t(locale, "nav.skills"), href: "/skills" },
+  { label: t(locale, "nav.achievements"), href: "/achievements" },
+  { label: t(locale, "nav.contact"), href: "/contact" },
+];
+
+const currentPath = Astro.url.pathname.replace(/\/$/, "");
+
+// Build alternate locale URL for the current page
+const pathWithoutBase = currentPath.replace(base, "").replace(/^\/en/, "").replace(/\/$/, "") || "/";
+const altUrl = localePath(altLocale, pathWithoutBase === "/" ? "/" : pathWithoutBase);
+const altCanonicalUrl = new URL(altUrl, siteUrl).href;
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+    <link rel="icon" href={`${base}/favicon.ico`} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+
+    <!-- OpenGraph -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:locale" content={ogLocale} />
+    <meta property="og:site_name" content="이성진 | AI Engineer" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+
+    <!-- Canonical + hreflang -->
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="alternate" hreflang={locale} href={canonicalUrl} />
+    <link rel="alternate" hreflang={altLocale} href={altCanonicalUrl} />
+
+    <!-- Google Fonts preconnect + load -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+
+    <ClientRouter />
+  </head>
+  <body class="min-h-screen flex flex-col giraffe-pattern">
+    <!-- Background giraffe watermark -->
+    <GiraffeBackground />
+    <!-- Film grain overlay -->
+    <div class="grain-overlay" aria-hidden="true"></div>
+    <!-- Skip to content link for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-lg focus:bg-[var(--color-accent)] focus:px-4 focus:py-2 focus:text-white focus:text-sm">
+      {t(locale, "a11y.skipToContent")}
+    </a>
+
+    <!-- Navigation -->
+    <header class="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg-primary)]/80 backdrop-blur-md">
+      <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4" aria-label={t(locale, "a11y.mainNav")}>
+        <a href={localePath(locale, "/")} class="flex items-center gap-2 text-lg font-bold tracking-tight text-[var(--color-text-primary)] hover:text-[var(--color-accent-light)] transition-colors" style="font-family: var(--font-display);">
+          <span class="font-mono text-[var(--color-accent)] text-sm" aria-hidden="true">🦒</span>
+          girinman
+        </a>
+
+        {/* Desktop nav */}
+        <ul class="hidden md:flex items-center gap-6 text-sm">
+          {navItems.map((item) => {
+            const fullHref = localePath(locale, item.href);
+            const isActive = currentPath === fullHref.replace(/\/$/, "");
+            return (
+              <li>
+                <a
+                  href={fullHref}
+                  class:list={[
+                    "transition-colors hover:text-[var(--color-accent-light)]",
+                    isActive
+                      ? "text-[var(--color-accent-light)] font-medium"
+                      : "text-[var(--color-text-secondary)]",
+                  ]}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            );
+          })}
+          {/* Language switcher */}
+          <li>
+            <a
+              href={altUrl}
+              class="rounded-md border border-[var(--color-border)] px-2.5 py-1 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent-light)]"
+              aria-label={altLocale === "ko" ? "한국어로 보기" : "Switch to English"}
+            >
+              {altLocale === "ko" ? "KO" : "EN"}
+            </a>
+          </li>
+        </ul>
+
+        {/* Mobile hamburger button */}
+        <button
+          id="mobile-menu-btn"
+          class="md:hidden flex flex-col justify-center items-center w-11 h-11 gap-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-accent-light)] transition-colors"
+          aria-label={t(locale, "a11y.toggleMenu")}
+          aria-expanded="false"
+        >
+          <span class="hamburger-line block w-5 h-0.5 bg-current transition-all duration-300 origin-center"></span>
+          <span class="hamburger-line block w-5 h-0.5 bg-current transition-all duration-300"></span>
+          <span class="hamburger-line block w-5 h-0.5 bg-current transition-all duration-300 origin-center"></span>
+        </button>
+      </nav>
+
+      {/* Mobile menu */}
+      <div id="mobile-menu" class="md:hidden hidden border-t border-[var(--color-border)] bg-[var(--color-bg-primary)]/95 backdrop-blur-md">
+        <ul class="flex flex-col px-6 py-4 gap-1">
+          {navItems.map((item) => {
+            const fullHref = localePath(locale, item.href);
+            const isActive = currentPath === fullHref.replace(/\/$/, "");
+            return (
+              <li>
+                <a
+                  href={fullHref}
+                  class:list={[
+                    "mobile-menu-item block min-h-[44px] flex items-center py-3 px-3 rounded-lg text-sm transition-colors",
+                    isActive
+                      ? "text-[var(--color-accent-light)] font-medium bg-[var(--color-accent)]/10"
+                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-accent-light)] hover:bg-[var(--color-bg-hover)]",
+                  ]}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            );
+          })}
+          {/* Mobile language switcher */}
+          <li class="mt-2 pt-3 border-t border-[var(--color-border)]">
+            <a
+              href={altUrl}
+              class="mobile-menu-item block min-h-[44px] flex items-center py-3 px-3 rounded-lg text-sm font-medium text-[var(--color-accent)] border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/5 hover:text-[var(--color-accent-light)] hover:bg-[var(--color-accent)]/15 hover:border-[var(--color-accent)]/50 transition-colors"
+              aria-label={altLocale === "ko" ? "한국어로 보기" : "Switch to English"}
+            >
+              {altLocale === "ko" ? "🇰🇷 한국어" : "🇺🇸 English"}
+            </a>
+          </li>
+        </ul>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-content" class="flex-1">
+      <slot />
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-[var(--color-border)] py-10">
+      <div class="mx-auto max-w-5xl px-6">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+          {/* Footer nav */}
+          <nav class="flex items-center gap-6 text-sm text-[var(--color-text-muted)]" aria-label="Footer navigation">
+            {navItems.map((item) => (
+              <a
+                href={localePath(locale, item.href)}
+                class="hover:text-[var(--color-accent-light)] transition-colors"
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          {/* Social links */}
+          <div class="flex items-center gap-4">
+            <a href="https://github.com/GirinMan" target="_blank" rel="noopener" aria-label="GitHub" class="text-[var(--color-text-muted)] hover:text-[var(--color-accent-light)] transition-colors">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            </a>
+            <a href="https://www.linkedin.com/in/girinman" target="_blank" rel="noopener" aria-label="LinkedIn" class="text-[var(--color-text-muted)] hover:text-[var(--color-accent-light)] transition-colors">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            </a>
+            <a href="https://huggingface.co/GirinMan" target="_blank" rel="noopener" aria-label="Hugging Face" class="text-[var(--color-text-muted)] hover:text-[var(--color-accent-light)] transition-colors">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-1.5 7.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm3 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM7.5 14c0-1.1.4-2.1 1-2.9.2-.2.5-.2.7 0 .7.8 2 2.4 2.8 2.4s2.1-1.6 2.8-2.4c.2-.2.5-.2.7 0 .6.8 1 1.8 1 2.9 0 2.5-2 4.5-4.5 4.5S7.5 16.5 7.5 14z"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="mt-6 flex flex-col items-center gap-1 text-xs text-[var(--color-text-muted)]">
+          <p class="font-mono">&copy; {new Date().getFullYear()} 🦒 girinman (Seongjin Lee). {t(locale, "footer.rights")}</p>
+          <p class="font-mono">{t(locale, "footer.builtWith")}</p>
+        </div>
+      </div>
+    </footer>
+
+    {/* Mobile menu script — compatible with ClientRouter transitions */}
+    <script>
+      function setupMobileMenu() {
+        const btn = document.getElementById("mobile-menu-btn");
+        const menu = document.getElementById("mobile-menu");
+        if (!btn || !menu) return;
+
+        // Clone to remove stale listeners from previous navigations
+        const fresh = btn.cloneNode(true) as HTMLElement;
+        btn.parentNode?.replaceChild(fresh, btn);
+
+        fresh.addEventListener("click", () => {
+          const isOpen = !menu.classList.contains("hidden");
+          menu.classList.toggle("hidden");
+          fresh.setAttribute("aria-expanded", String(!isOpen));
+          fresh.classList.toggle("menu-open");
+
+          // Focus first menu item when opening
+          if (isOpen === false) {
+            const firstLink = menu.querySelector("a");
+            firstLink?.focus();
+          }
+        });
+
+        // Close on Escape
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && !menu.classList.contains("hidden")) {
+            menu.classList.add("hidden");
+            fresh.setAttribute("aria-expanded", "false");
+            fresh.classList.remove("menu-open");
+            fresh.focus();
+          }
+        });
+
+        // Focus trap: cycle Tab within mobile menu when open
+        menu.addEventListener("keydown", (e) => {
+          if (e.key !== "Tab" || menu.classList.contains("hidden")) return;
+          const focusable = menu.querySelectorAll<HTMLElement>("a, button");
+          if (focusable.length === 0) return;
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        });
+      }
+
+      setupMobileMenu();
+      document.addEventListener("astro:after-swap", setupMobileMenu);
+    </script>
+  </body>
+</html>

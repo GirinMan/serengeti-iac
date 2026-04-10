@@ -1,0 +1,206 @@
+---
+/**
+ * Compact minimap version of the AI Industry Layer Stack.
+ * Shows bars + icons only. Clicking navigates to /skills.
+ */
+import { localePath } from "../i18n";
+
+interface Props {
+  locale: "ko" | "en";
+}
+
+const { locale } = Astro.props;
+
+const layers = [
+  // L5 Applications
+  { id: 12, icon: "🏛️", label: "도메인·법률 AI", labelEn: "Domain · Legal AI", strength: 85, highlight: true },
+  { id: 11, icon: "🔗", label: "워크플로우·에이전트", labelEn: "Workflow · Agent", strength: 85, highlight: true },
+  { id: 10, icon: "📐", label: "서비스 기획", labelEn: "Service Planning", strength: 45, highlight: false },
+  // L4 Models
+  { id: 9, icon: "🧠", label: "파운데이션 모델", labelEn: "Foundation", strength: 80, highlight: true },
+  { id: 8, icon: "🔬", label: "도메인 특화", labelEn: "Domain Specialization", strength: 80, highlight: true },
+  { id: 7, icon: "🎯", label: "평가 & 품질", labelEn: "Evaluation & QA", strength: 85, highlight: true },
+  // L3 Infrastructure
+  { id: 6, icon: "⚡", label: "모델 서빙", labelEn: "Model Serving", strength: 90, highlight: true },
+  { id: 5, icon: "🔧", label: "백엔드·API", labelEn: "Backend · API", strength: 80, highlight: true },
+  { id: 4, icon: "🖥️", label: "GPU 인프라", labelEn: "GPU Infra", strength: 60, highlight: false },
+  // L2 Chips
+  { id: 13, icon: "🔲", label: "칩·가속기", labelEn: "Chips · Accelerators", strength: 55, highlight: false },
+  // Cross-cutting
+  { id: 3, icon: "💻", label: "프로그래밍 언어", labelEn: "Languages", strength: 70, highlight: true },
+  { id: 2, icon: "⚙️", label: "도구·DevOps", labelEn: "Tools · DevOps", strength: 65, highlight: false },
+  { id: 1, icon: "🤝", label: "협업·소통", labelEn: "Collaboration", strength: 80, highlight: true },
+];
+
+const heading = locale === "ko" ? "AI 역량 스택" : "AI Competency Stack";
+const cta = locale === "ko" ? "상세 보기 →" : "View Details →";
+---
+
+<a href={localePath(locale, "/skills")} class="mini-stack-link" aria-label={heading}>
+  <div class="mini-stack">
+    <div class="mini-header">
+      <span class="mini-prefix" aria-hidden="true">&lt;stack/&gt;</span>
+      <span class="mini-title">{heading}</span>
+    </div>
+
+    <div class="mini-layers">
+      {layers.map((layer, i) => {
+        const label = locale === "ko" ? layer.label : layer.labelEn;
+        const barWidth = Math.max(layer.strength * 0.8 + 10, 8);
+        return (
+          <div
+            class:list={["mini-row", layer.highlight && "mini-row--hot", layer.strength === 0 && "mini-row--cold"]}
+            style={`--bar-w: ${barWidth}%; --delay: ${i * 0.04}s;`}
+          >
+            <span class="mini-icon" aria-hidden="true">{layer.icon}</span>
+            <span class="mini-label">{label}</span>
+            <div class="mini-bar">
+              <div class="mini-bar-fill"></div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    <div class="mini-cta">
+      <span>{cta}</span>
+    </div>
+  </div>
+</a>
+
+<style>
+  .mini-stack-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s;
+  }
+
+  .mini-stack-link:hover {
+    transform: translateY(-2px);
+  }
+
+  .mini-stack {
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-bg-card);
+    padding: 1rem 1.25rem;
+    transition: all 0.3s;
+  }
+
+  .mini-stack-link:hover .mini-stack {
+    border-color: var(--color-accent-dark);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3), 0 0 15px rgba(212, 160, 106, 0.08);
+  }
+
+  .mini-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .mini-prefix {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    color: var(--color-accent);
+    opacity: 0.5;
+  }
+
+  .mini-title {
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .mini-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .mini-row {
+    display: grid;
+    grid-template-columns: 1.25rem auto 1fr;
+    align-items: center;
+    gap: 0.375rem;
+    animation: miniReveal 0.3s ease-out both;
+    animation-delay: var(--delay);
+  }
+
+  @keyframes miniReveal {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .mini-icon {
+    font-size: 0.6875rem;
+    text-align: center;
+    line-height: 1;
+  }
+
+  .mini-label {
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    min-width: 4.5rem;
+  }
+
+  .mini-row--hot .mini-label {
+    color: var(--color-text-primary);
+    font-weight: 500;
+  }
+
+  .mini-row--cold .mini-label {
+    opacity: 0.35;
+  }
+
+  .mini-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--color-bg-secondary);
+    overflow: hidden;
+    border: 1px solid rgba(212, 160, 106, 0.08);
+  }
+
+  .mini-bar-fill {
+    width: var(--bar-w);
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, rgba(212, 160, 106, 0.15), var(--color-accent));
+    opacity: 0.5;
+    transition: opacity 0.3s;
+  }
+
+  .mini-row--hot .mini-bar-fill {
+    opacity: 0.8;
+  }
+
+  .mini-row--cold .mini-bar-fill {
+    opacity: 0;
+  }
+
+  .mini-stack-link:hover .mini-bar-fill {
+    opacity: 1;
+  }
+
+  .mini-cta {
+    margin-top: 0.75rem;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--color-accent);
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+
+  .mini-stack-link:hover .mini-cta {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mini-row { animation: none; opacity: 1; }
+  }
+</style>

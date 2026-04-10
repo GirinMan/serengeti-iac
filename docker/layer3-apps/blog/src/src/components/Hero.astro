@@ -1,0 +1,144 @@
+---
+import { type Locale, t, localePath } from "../i18n";
+import SkillLayerMini3D from "./SkillLayerMini3D.astro";
+
+interface Props {
+  name?: string;
+  tagline?: string;
+  description?: string;
+  highlights?: string[];
+  locale?: Locale;
+}
+
+const {
+  name = "이성진",
+  tagline = "AI Engineer",
+  description = "",
+  highlights = [],
+  locale = "ko",
+} = Astro.props;
+---
+
+<section class="relative mx-auto max-w-5xl px-6 py-20 md:py-32 overflow-hidden z-10">
+  <div class="flex flex-col lg:flex-row items-start gap-10 lg:gap-16">
+    <!-- Left: Content -->
+    <div class="flex-1">
+      <!-- Terminal prompt -->
+      <div class="mb-6 inline-flex items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)]/80 backdrop-blur-sm px-4 py-2.5">
+        <span class="h-2 w-2 rounded-full bg-[var(--color-terminal-green)] animate-pulse"></span>
+        <p class="font-mono text-sm text-[var(--color-terminal-green)] hero-typing">
+          <span class="text-[var(--color-accent)]">$</span> whoami
+        </p>
+      </div>
+
+      <!-- Name -->
+      <h1 class="text-4xl font-medium tracking-tight md:text-5xl lg:text-6xl hero-fadein hero-fadein-1" style={`font-family: ${/[\uAC00-\uD7AF]/.test(name) ? 'var(--font-display-ko)' : 'var(--font-display)'};`}>
+        {name}
+      </h1>
+
+      <!-- Tagline -->
+      <p class="mt-4 text-lg md:text-xl font-semibold text-[var(--color-accent)] hero-fadein hero-fadein-2" style="font-family: var(--font-display);">
+        {tagline}
+      </p>
+
+      <!-- Description -->
+      {description && (
+        <p class="mt-6 text-base leading-relaxed text-[var(--color-text-secondary)] max-w-xl">
+          {description}
+        </p>
+      )}
+
+      {highlights.length > 0 && (
+        <ul class="mt-4 space-y-1.5 max-w-xl">
+          {highlights.map((h) => (
+            <li class="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+              <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-[var(--color-accent-dark)] shrink-0" aria-hidden="true"></span>
+              <span>{h}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+
+      <!-- CTA -->
+      <div class="mt-8 flex flex-col sm:flex-row gap-4">
+        <a
+          href={localePath(locale, "/projects")}
+          class="group inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-6 py-3 text-sm font-semibold text-[var(--color-bg-primary)] transition-all hover:bg-[var(--color-accent-light)] hover:shadow-lg hover:shadow-[var(--color-accent)]/20"
+          style="font-family: var(--font-display);"
+        >
+          {t(locale, "hero.viewProjects")}
+          <span class="transition-transform group-hover:translate-x-0.5">&rarr;</span>
+        </a>
+        <a
+          href={localePath(locale, "/contact")}
+          class="group inline-flex items-center gap-2 rounded-lg border border-[var(--color-accent)] px-6 py-3 text-sm font-semibold text-[var(--color-accent)] transition-all hover:bg-[var(--color-accent)]/10 hover:text-[var(--color-accent-light)]"
+          style="font-family: var(--font-display);"
+        >
+          {t(locale, "hero.getInTouch")}
+        </a>
+      </div>
+    </div>
+
+    <!-- Right: Skill Layer Mini -->
+    <div class="w-full lg:w-80 shrink-0">
+      <SkillLayerMini3D locale={locale} />
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Typing animation for terminal prompt */
+  .hero-typing {
+    overflow: hidden;
+    white-space: nowrap;
+    width: 0;
+    border-right: 2px solid var(--color-terminal-green);
+    animation: hero-type 1.5s steps(8) 0.3s forwards, hero-blink 0.7s step-end 0.3s infinite;
+  }
+
+  @keyframes hero-type {
+    to { width: 100%; }
+  }
+
+  @keyframes hero-blink {
+    50% { border-color: transparent; }
+  }
+
+  /* Sequential fade-in for name and tagline */
+  .hero-fadein {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: hero-fade 0.6s ease-out forwards;
+  }
+
+  .hero-fadein-1 {
+    animation-delay: 1.8s;
+  }
+
+  .hero-fadein-2 {
+    animation-delay: 2.2s;
+  }
+
+  @keyframes hero-fade {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .hero-typing {
+      width: 100%;
+      border-right: none;
+      animation: none;
+    }
+
+    .hero-fadein {
+      opacity: 1;
+      transform: none;
+      animation: none;
+    }
+  }
+</style>

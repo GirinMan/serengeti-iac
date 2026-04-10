@@ -1,0 +1,152 @@
+---
+/**
+ * Full-page giraffe watermark background.
+ * Fixed position, subtle drift animation, non-interactive.
+ */
+---
+
+<div class="giraffe-bg" aria-hidden="true">
+  <svg
+    viewBox="0 0 200 280"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    class="giraffe-bg-svg"
+  >
+    <!-- Ossicones -->
+    <circle cx="78" cy="18" r="5" fill="currentColor" opacity="0.5"/>
+    <circle cx="112" cy="18" r="5" fill="currentColor" opacity="0.5"/>
+    <line x1="78" y1="23" x2="78" y2="38" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+    <line x1="112" y1="23" x2="112" y2="38" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+
+    <!-- Head -->
+    <rect x="65" y="32" width="60" height="42" rx="16" fill="currentColor" opacity="0.06" stroke="currentColor" stroke-width="1" opacity="0.15"/>
+
+    <!-- Eyes -->
+    <circle cx="82" cy="50" r="3" fill="currentColor" opacity="0.3"/>
+    <circle cx="108" cy="50" r="3" fill="currentColor" opacity="0.3"/>
+
+    <!-- Smile -->
+    <path d="M88 60 Q95 66 102 60" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.2"/>
+
+    <!-- Ears -->
+    <path d="M65 42 L54 36 L63 47" fill="currentColor" opacity="0.06" stroke="currentColor" stroke-width="0.8" opacity="0.12"/>
+    <path d="M125 42 L136 36 L127 47" fill="currentColor" opacity="0.06" stroke="currentColor" stroke-width="0.8" opacity="0.12"/>
+
+    <!-- Neck -->
+    <path d="M82 74 L82 170 Q82 176 88 176 L102 176 Q108 176 108 170 L108 74" fill="currentColor" opacity="0.03" stroke="currentColor" stroke-width="1" opacity="0.1"/>
+
+    <!-- Spots on neck -->
+    <ellipse cx="90" cy="95" rx="6" ry="5" fill="currentColor" opacity="0.06"/>
+    <ellipse cx="102" cy="112" rx="5" ry="6" fill="currentColor" opacity="0.06"/>
+    <ellipse cx="88" cy="130" rx="7" ry="5" fill="currentColor" opacity="0.06"/>
+    <ellipse cx="100" cy="150" rx="5" ry="6" fill="currentColor" opacity="0.06"/>
+    <ellipse cx="92" cy="166" rx="6" ry="4" fill="currentColor" opacity="0.06"/>
+
+    <!-- Body -->
+    <rect x="58" y="170" width="74" height="52" rx="12" fill="currentColor" opacity="0.04" stroke="currentColor" stroke-width="1" opacity="0.08"/>
+
+    <!-- Spots on body -->
+    <ellipse cx="78" cy="188" rx="8" ry="7" fill="currentColor" opacity="0.05"/>
+    <ellipse cx="112" cy="192" rx="7" ry="8" fill="currentColor" opacity="0.05"/>
+    <ellipse cx="95" cy="206" rx="9" ry="6" fill="currentColor" opacity="0.05"/>
+
+    <!-- Legs -->
+    <line x1="74" y1="222" x2="74" y2="258" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.12"/>
+    <line x1="90" y1="222" x2="90" y2="258" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.12"/>
+    <line x1="100" y1="222" x2="100" y2="258" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.12"/>
+    <line x1="116" y1="222" x2="116" y2="258" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.12"/>
+
+    <!-- Hooves -->
+    <rect x="69" y="255" width="10" height="5" rx="2.5" fill="currentColor" opacity="0.15"/>
+    <rect x="85" y="255" width="10" height="5" rx="2.5" fill="currentColor" opacity="0.15"/>
+    <rect x="95" y="255" width="10" height="5" rx="2.5" fill="currentColor" opacity="0.15"/>
+    <rect x="111" y="255" width="10" height="5" rx="2.5" fill="currentColor" opacity="0.15"/>
+
+    <!-- Tail -->
+    <path d="M132 180 Q145 175 148 185 Q150 192 142 190" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.1"/>
+    <circle cx="142" cy="190" r="2.5" fill="currentColor" opacity="0.12"/>
+  </svg>
+</div>
+
+<style>
+  .giraffe-bg {
+    position: fixed;
+    bottom: -15%;
+    right: -10%;
+    width: 140vw;
+    max-width: 1800px;
+    min-width: 800px;
+    height: auto;
+    pointer-events: none;
+    z-index: 0;
+    color: var(--color-accent);
+    animation: giraffeFloat 20s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .giraffe-bg-svg {
+    width: 100%;
+    height: auto;
+    filter: blur(0.5px);
+  }
+
+  @keyframes giraffeFloat {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 0.35;
+    }
+    25% {
+      transform: translateY(-12px) rotate(0.3deg);
+      opacity: 0.4;
+    }
+    50% {
+      transform: translateY(-6px) rotate(-0.2deg);
+      opacity: 0.35;
+    }
+    75% {
+      transform: translateY(-15px) rotate(0.15deg);
+      opacity: 0.38;
+    }
+  }
+
+  /* Subtle parallax on scroll via CSS */
+  @supports (animation-timeline: scroll()) {
+    .giraffe-bg {
+      animation:
+        giraffeFloat 20s ease-in-out infinite,
+        giraffeParallax linear;
+      animation-timeline: giraffeFloat, scroll();
+    }
+
+    @keyframes giraffeParallax {
+      from { transform: translateY(5%); }
+      to { transform: translateY(-10%); }
+    }
+  }
+
+  /* Responsive sizing */
+  @media (max-width: 768px) {
+    .giraffe-bg {
+      width: 160vw;
+      right: -30%;
+      bottom: -10%;
+      opacity: 0.15;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .giraffe-bg {
+      width: 200vw;
+      right: -40%;
+      bottom: -5%;
+    }
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .giraffe-bg {
+      animation: none;
+      opacity: 0.25;
+    }
+  }
+</style>

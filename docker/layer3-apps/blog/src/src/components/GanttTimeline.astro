@@ -1,0 +1,502 @@
+---
+interface GanttBar {
+  id: string;
+  label: string;
+  labelEn: string;
+  startQ: number;
+  endQ: number;
+  colorVar: string;
+  highlight?: boolean;
+  ongoing?: boolean;
+}
+
+interface Props {
+  locale: "ko" | "en";
+}
+
+const { locale } = Astro.props;
+
+const TOTAL_QUARTERS = 12;
+
+const quarters = ["Q3","Q4","Q1","Q2","Q3","Q4","Q1","Q2","Q3","Q4","Q1","Q2"];
+const years = [
+  { label: "2023", span: 2 },
+  { label: "2024", span: 4 },
+  { label: "2025", span: 4 },
+  { label: "2026", span: 2 },
+];
+
+// Current time marker: 2026 Q2 = index 11 (last quarter)
+// Bars that extend to or past Q10 (2026 Q1) with ongoing=true get future styling
+const NOW_Q = 10; // 2026 Q1 is approximately "now"
+
+const bars: GanttBar[] = [
+  {
+    id: "contract-ai", label: "Legal LLM 고도화", labelEn: "Legal LLM Enhancement",
+    startQ: 0, endQ: 11, colorVar: "var(--color-accent-light)",
+    highlight: true, ongoing: true,
+  },
+  {
+    id: "llm-training", label: "LLM 학습 & 정렬", labelEn: "LLM Training & Alignment",
+    startQ: 1, endQ: 8, colorVar: "var(--color-accent)",
+    highlight: true, ongoing: false,
+  },
+  {
+    id: "evaluation", label: "AI 서비스 평가 시스템", labelEn: "AI Service Evaluation",
+    startQ: 0, endQ: 11, colorVar: "var(--color-accent-dark)",
+    highlight: false, ongoing: true,
+  },
+  {
+    id: "oss-lorax", label: "OSS: lorax", labelEn: "OSS: lorax",
+    startQ: 2, endQ: 5, colorVar: "var(--color-terminal-green)",
+    highlight: false, ongoing: false,
+  },
+  {
+    id: "workflow-agent", label: "Workflow & Agent", labelEn: "Workflow & Agent",
+    startQ: 3, endQ: 11, colorVar: "var(--color-accent)",
+    highlight: true, ongoing: true,
+  },
+  {
+    id: "partner", label: "파트너 통합", labelEn: "Partner Integration",
+    startQ: 8, endQ: 11, colorVar: "#a07850",
+    highlight: false, ongoing: true,
+  },
+];
+
+const sectionTitle = locale === "ko" ? "프로젝트 타임라인" : "Project Timeline";
+const nowLabel = locale === "ko" ? "현재" : "Now";
+---
+
+<div class="gantt-container">
+  <div class="gantt-section-heading">
+    <span class="gantt-section-icon" aria-hidden="true">📅</span>
+    <h2 class="gantt-section-title">{sectionTitle}</h2>
+  </div>
+
+  <!-- Desktop Gantt -->
+  <div class="gantt" role="img" aria-label={sectionTitle}>
+    <!-- Year headers -->
+    <div class="gantt-years">
+      <div class="gantt-label-col"></div>
+      {years.map(y => (
+        <div class="gantt-year" style={`--year-span: ${y.span}`}>
+          <span>{y.label}</span>
+        </div>
+      ))}
+    </div>
+
+    <!-- Quarter headers -->
+    <div class="gantt-quarters">
+      <div class="gantt-label-col"></div>
+      {quarters.map((q, i) => (
+        <div class:list={["gantt-q", i === TOTAL_QUARTERS - 1 && "gantt-q--last"]}>
+          <span>{q}</span>
+        </div>
+      ))}
+    </div>
+
+    <!-- Bars -->
+    {bars.map((bar) => {
+      const leftPct = (bar.startQ / TOTAL_QUARTERS) * 100;
+      const widthPct = ((bar.endQ - bar.startQ + 1) / TOTAL_QUARTERS) * 100;
+      const barLabel = locale === "ko" ? bar.label : bar.labelEn;
+      // Calculate future portion for ongoing bars that extend past NOW_Q
+      const hasFuture = bar.ongoing && bar.endQ > NOW_Q;
+      const futureSplitPct = hasFuture ? ((NOW_Q - bar.startQ + 1) / (bar.endQ - bar.startQ + 1)) * 100 : 100;
+
+      return (
+        <div class="gantt-row" data-bar-id={bar.id}>
+          <div class="gantt-label-col">
+            <span class="gantt-bar-label">{barLabel}</span>
+          </div>
+          <div class="gantt-track">
+            {/* Vertical grid lines */}
+            {quarters.map((_, i) => (
+              <div
+                class:list={["gantt-gridline", (i === 2 || i === 6 || i === 10) && "gantt-gridline--year"]}
+                style={`left: ${(i / TOTAL_QUARTERS) * 100}%`}
+              ></div>
+            ))}
+            {/* "Now" marker */}
+            <div class="gantt-now" style={`left: ${((10.5) / TOTAL_QUARTERS) * 100}%`}>
+              <div class="gantt-now-line"></div>
+              <span class="gantt-now-label">{nowLabel}</span>
+            </div>
+            {/* The bar */}
+            <div
+              class:list={[
+                "gantt-bar",
+                bar.highlight && "gantt-bar--highlight",
+                bar.ongoing && "gantt-bar--ongoing",
+                hasFuture && "gantt-bar--has-future",
+              ]}
+              style={`left: ${leftPct}%; width: ${widthPct}%; --bar-color: ${bar.colorVar}; --future-split: ${futureSplitPct}%;`}
+              title={barLabel}
+            >
+              <div class="gantt-bar-fill"></div>
+              {hasFuture && <div class="gantt-bar-future" aria-hidden="true"></div>}
+              {bar.ongoing && <div class="gantt-bar-pulse" aria-hidden="true"></div>}
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+
+  <!-- Mobile: vertical stack -->
+  <div class="gantt-mobile" role="list" aria-label={sectionTitle}>
+    {bars.map((bar) => {
+      const barLabel = locale === "ko" ? bar.label : bar.labelEn;
+      const startLabel = quarters[bar.startQ] ? `${years.reduce((acc, y, i) => {
+        const before = years.slice(0, i).reduce((s, yy) => s + yy.span, 0);
+        return bar.startQ >= before && bar.startQ < before + y.span ? y.label : acc;
+      }, "2023")} ${quarters[bar.startQ]}` : "";
+      const endLabel = bar.ongoing
+        ? (locale === "ko" ? "현재" : "Present")
+        : quarters[bar.endQ] ? `${years.reduce((acc, y, i) => {
+          const before = years.slice(0, i).reduce((s, yy) => s + yy.span, 0);
+          return bar.endQ >= before && bar.endQ < before + y.span ? y.label : acc;
+        }, "2026")} ${quarters[bar.endQ]}` : "";
+      const barWidthPct = ((bar.endQ - bar.startQ + 1) / TOTAL_QUARTERS) * 100;
+
+      return (
+        <div class:list={["gantt-m-item", bar.highlight && "gantt-m-item--highlight"]} role="listitem">
+          <div class="gantt-m-header">
+            <span class="gantt-m-label">{barLabel}</span>
+            {bar.ongoing && <span class="gantt-m-ongoing">{locale === "ko" ? "진행중" : "Ongoing"}</span>}
+          </div>
+          <div class="gantt-m-bar-track">
+            <div class="gantt-m-bar" style={`width: ${barWidthPct}%; --bar-color: ${bar.colorVar};`}></div>
+          </div>
+          <div class="gantt-m-meta">
+            <span class="gantt-m-period">{startLabel} — {endLabel}</span>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div>
+
+<style>
+  /* ========================================
+     GANTT TIMELINE — Terminal Savanna
+     ======================================== */
+
+  .gantt-container {
+    margin-top: 3rem;
+  }
+
+  .gantt-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .gantt-section-icon {
+    font-size: 1rem;
+  }
+
+  .gantt-section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  /* ========= DESKTOP GANTT ========= */
+  .gantt {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-bg-card);
+    padding: 1rem 0;
+    overflow-x: auto;
+  }
+
+  /* Hide mobile version on desktop */
+  .gantt-mobile { display: none; }
+
+  @media (max-width: 767px) {
+    .gantt { display: none; }
+    .gantt-mobile { display: flex; flex-direction: column; gap: 0.75rem; }
+  }
+
+  /* ---- Column widths ---- */
+  .gantt-label-col {
+    width: 180px;
+    min-width: 180px;
+    padding: 0 0.75rem;
+    display: flex;
+    align-items: center;
+  }
+
+  /* ---- Year header row ---- */
+  .gantt-years {
+    display: flex;
+    align-items: center;
+    padding-bottom: 0.25rem;
+  }
+
+  .gantt-year {
+    flex: var(--year-span);
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    border-bottom: 2px solid var(--color-border);
+    padding-bottom: 0.25rem;
+  }
+
+  /* ---- Quarter header row ---- */
+  .gantt-quarters {
+    display: flex;
+    align-items: center;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .gantt-q {
+    flex: 1;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    color: var(--color-text-muted);
+    opacity: 0.6;
+  }
+
+  /* ---- Bar row ---- */
+  .gantt-row {
+    display: flex;
+    align-items: center;
+    height: 36px;
+    transition: background 0.2s;
+  }
+
+  .gantt-row:hover {
+    background: rgba(212, 160, 106, 0.03);
+  }
+
+  .gantt-bar-label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
+
+  .gantt-row:hover .gantt-bar-label {
+    color: var(--color-text-primary);
+  }
+
+  /* ---- Track (the bar area) ---- */
+  .gantt-track {
+    flex: 1;
+    position: relative;
+    height: 100%;
+    min-width: 300px;
+  }
+
+  /* Vertical gridlines */
+  .gantt-gridline {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--color-border);
+    opacity: 0.3;
+  }
+
+  .gantt-gridline--year {
+    opacity: 0.6;
+    background: var(--color-border-hover);
+  }
+
+  /* "Now" marker */
+  .gantt-now {
+    position: absolute;
+    top: -8px;
+    bottom: -4px;
+    z-index: 5;
+  }
+
+  .gantt-now-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 2px;
+    background: var(--color-accent);
+    opacity: 0.6;
+  }
+
+  .gantt-now-label {
+    position: absolute;
+    top: -14px;
+    left: -10px;
+    font-family: var(--font-mono);
+    font-size: 0.5rem;
+    color: var(--color-accent);
+    white-space: nowrap;
+  }
+
+  /* ---- The bar itself ---- */
+  .gantt-bar {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 20px;
+    border-radius: 4px;
+    overflow: hidden;
+    transition: height 0.2s, box-shadow 0.2s;
+    cursor: default;
+  }
+
+  .gantt-bar-fill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--bar-color) 60%, transparent),
+      var(--bar-color)
+    );
+    border-radius: 4px;
+    border: 1px solid color-mix(in srgb, var(--bar-color) 80%, white 20%);
+  }
+
+  .gantt-row:hover .gantt-bar {
+    height: 24px;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--bar-color) 40%, transparent);
+  }
+
+  .gantt-bar--highlight .gantt-bar-fill {
+    border-color: var(--bar-color);
+  }
+
+  /* Ongoing pulse at right edge */
+  .gantt-bar--ongoing {
+    border-right: 2px dashed color-mix(in srgb, var(--bar-color) 50%, transparent);
+  }
+
+  .gantt-bar-pulse {
+    position: absolute;
+    right: -1px;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background: var(--bar-color);
+    animation: ganttPulse 2s ease-in-out infinite;
+    border-radius: 0 4px 4px 0;
+  }
+
+  @keyframes ganttPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+  }
+
+  /* Future portion — dashed/striped overlay past the "now" line */
+  .gantt-bar--has-future .gantt-bar-fill {
+    mask-image: linear-gradient(90deg, #000 var(--future-split), transparent var(--future-split));
+    -webkit-mask-image: linear-gradient(90deg, #000 var(--future-split), transparent var(--future-split));
+  }
+
+  .gantt-bar-future {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--future-split);
+    right: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--bar-color) 30%, transparent) 0px,
+      color-mix(in srgb, var(--bar-color) 30%, transparent) 4px,
+      transparent 4px,
+      transparent 8px
+    );
+    border-radius: 0 4px 4px 0;
+    border: 1px dashed color-mix(in srgb, var(--bar-color) 40%, transparent);
+    border-left: none;
+    animation: ganttFuturePulse 3s ease-in-out infinite;
+  }
+
+  @keyframes ganttFuturePulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+  }
+
+  /* ========= MOBILE VERTICAL STACK ========= */
+  .gantt-m-item {
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: var(--color-bg-card);
+    padding: 0.75rem 1rem;
+    transition: border-color 0.2s;
+  }
+
+  .gantt-m-item--highlight {
+    border-color: var(--color-border-hover);
+  }
+
+  .gantt-m-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .gantt-m-label {
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .gantt-m-ongoing {
+    font-family: var(--font-mono);
+    font-size: 0.5rem;
+    padding: 2px 6px;
+    border-radius: 9999px;
+    background: rgba(212, 160, 106, 0.12);
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .gantt-m-bar-track {
+    width: 100%;
+    height: 6px;
+    background: var(--color-bg-secondary);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .gantt-m-bar {
+    height: 100%;
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--bar-color) 50%, transparent),
+      var(--bar-color)
+    );
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+
+  .gantt-m-meta {
+    display: flex;
+    align-items: center;
+  }
+
+  .gantt-m-period {
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    color: var(--color-text-muted);
+  }
+
+  /* ========= REDUCED MOTION ========= */
+  @media (prefers-reduced-motion: reduce) {
+    .gantt-bar-pulse {
+      animation: none;
+      opacity: 0.5;
+    }
+  }
+</style>

@@ -1,0 +1,249 @@
+---
+import Layout from "../Layout.astro";
+import PageCTA from "../PageCTA.astro";
+import { t, localePath } from "../../i18n";
+
+interface Props {
+  locale: "ko" | "en";
+}
+
+const { locale } = Astro.props;
+
+/* ------------------------------------------------------------------ */
+/*  Locale-specific data                                              */
+/* ------------------------------------------------------------------ */
+
+const data = {
+  ko: {
+    layoutTitle: "육군 — 경력 상세",
+    layoutDescription: "대한민국 육군 정보보호병 복무 상세.",
+    headerTitle: "정보보호병 (전문특기병)",
+    headerOrg: "대한민국 육군",
+    headerLocation: "3군단 103정보통신단 사이버방호실 통합관제팀 | 강원도 인제군",
+    description: "약 18개월간 대한민국 육군 전문특기병 정보보호병으로 복무했습니다. 외부와 완전히 분리된 폐쇄망(air-gapped) 환경에서 보안 관제, 기반체계 운영, 자동화 프로그램 개발을 수행했습니다. 제한된 환경에서의 문제 해결 경험은 이후 on-premise 성격의 환경을 이해하는 기반이 되었습니다.",
+    disclaimer: "구체적인 네트워크 구조, 자동화 프로그램의 상세 구현, 운영 절차는 군사기밀상 공개할 수 없습니다.",
+    serviceTimelineHeading: "복무 이력",
+    responsibilities: [
+      { icon: "🛡️", text: "육군 전문특기병 정보보호병(175104)으로 선발되어 복무" },
+      { icon: "📡", text: "사이버방호실 통합관제팀에서 군단급 보안 관제 및 기반체계 운영 지원" },
+      { icon: "🖥️", text: "내부망 서버 관리, UTM 관제, 보안 로그 분석" },
+      { icon: "⚙️", text: "반복 업무를 줄이기 위한 자동화 프로그램 개발 — 외부 패키지 없이 폐쇄망 제약 하에서 구현" },
+      { icon: "🔍", text: "보안 관제와 기반체계 운영에서 반복되는 수작업 프로세스를 분석하고 자동화 가능 영역 식별" },
+    ],
+    serviceTimeline: [
+      { date: "2020-05-18", event: "입대, 전문특기병 정보보호병(175104) 선발" },
+      { date: "2020-07-16", event: "정보보호 5기 성적우수 횃불상 수상" },
+      { date: "2020-09-29", event: "육군 핵심가치 공모전(포스터 분야) 최우수" },
+      { date: "2020-12-01", event: "상등병 조기진급" },
+      { date: "2021-04-16", event: "분대장 임명" },
+      { date: "2021-08-31", event: "분대장 임무 종료" },
+      { date: "2021-11-21", event: "전역" },
+      { date: "2025-11-19", event: "사이버작전사령관 표창 (예비전력 기여)" },
+    ],
+    connections: [
+      {
+        from: "폐쇄망 운영",
+        to: "BHSN에서 AICA H100 인프라 운영, on-prem 배포 대응 시 환경 제약을 자연스럽게 이해하는 배경",
+      },
+      {
+        from: "자동화 지향",
+        to: "반복 업무 식별·자동화 습관이 playbook release workflow, daily scrum 자동화, CI/CD 파이프라인 설계로 연결",
+      },
+      {
+        from: "보안 감각",
+        to: "보안 관제와 로그 분석 실무가 token usage tracking, Sentry 기반 운영 모니터링 같은 observability 설계의 기초",
+      },
+      {
+        from: "절차 기반 운영",
+        to: "군의 엄격한 절차가 프로덕션 AI 시스템의 rollout 프로세스, QA/prod 분리, workspace-aware 배포 규칙 설계로 이어짐",
+      },
+    ],
+    recognitions: [
+      { metric: "4건", label: "공식 인정", detail: "횃불상, 공모전 최우수, 조기진급, 사이버작전사령관 표창" },
+      { metric: "18개월", label: "복무 기간", detail: "2020.05 — 2021.11" },
+      { metric: "4.5개월", label: "분대장 역임", detail: "병사 중 조직 운영 책임" },
+      { metric: "폐쇄망", label: "stdlib only", detail: "외부 패키지 없이 표준 라이브러리만으로 구현" },
+    ],
+    skills: [
+      "보안 관제 (UTM, 로그 분석)", "사이버 방호", "인프라 관리",
+      "폐쇄망 / On-premise", "자동화 (stdlib only)", "프로세스 분석/자동화",
+      "팀 리더십 (분대장)",
+    ],
+  },
+  en: {
+    layoutTitle: "ROK Army — Career Detail",
+    layoutDescription: "Republic of Korea Army InfoSec Specialist service details.",
+    headerTitle: "InfoSec Specialist (Specialist Conscript)",
+    headerOrg: "Republic of Korea Army",
+    headerLocation: "III Corps, 103rd Signal Brigade, Cyber Defense Division | Inje, Gangwon-do",
+    description: "Served approximately 18 months as an InfoSec Specialist in the ROK Army. Performed security monitoring, infrastructure operations, and automation development in a completely air-gapped environment. The experience of problem-solving under constrained conditions became a foundation for understanding on-premise environments later in my career.",
+    disclaimer: "Specific network architecture, detailed automation implementations, and operational procedures cannot be disclosed due to military confidentiality.",
+    serviceTimelineHeading: "Service Timeline",
+    responsibilities: [
+      { icon: "🛡️", text: "Selected and served as InfoSec Specialist (MOS 175104) in the ROK Army" },
+      { icon: "📡", text: "Supported corps-level security monitoring and infrastructure operations in the Cyber Defense Division" },
+      { icon: "🖥️", text: "Managed internal network servers, UTM monitoring, and security log analysis" },
+      { icon: "⚙️", text: "Developed automation programs to reduce repetitive tasks — built within air-gapped constraints without external packages" },
+      { icon: "🔍", text: "Analyzed repetitive manual processes in security monitoring and infrastructure operations, identifying areas for automation" },
+    ],
+    serviceTimeline: [
+      { date: "2020-05-18", event: "Enlisted, selected as InfoSec Specialist (MOS 175104)" },
+      { date: "2020-07-16", event: "InfoSec Class 5 Top Performer Award (Torch Award)" },
+      { date: "2020-09-29", event: "Army Core Values Contest (Poster category) Grand Prize" },
+      { date: "2020-12-01", event: "Early promotion to Corporal" },
+      { date: "2021-04-16", event: "Appointed as Squad Leader" },
+      { date: "2021-08-31", event: "Squad Leader assignment ended" },
+      { date: "2021-11-21", event: "Discharged" },
+      { date: "2025-11-19", event: "Cyber Operations Command Commendation (Reserve Forces contribution)" },
+    ],
+    connections: [
+      {
+        from: "Air-gapped Operations",
+        to: "Background for naturally understanding environment constraints when managing AICA H100 infrastructure and on-prem deployments at BHSN",
+      },
+      {
+        from: "Automation Mindset",
+        to: "Habit of identifying and automating repetitive tasks carried over to playbook release workflows, daily scrum automation, and CI/CD pipeline design",
+      },
+      {
+        from: "Security Awareness",
+        to: "Practical security monitoring and log analysis experience became the foundation for observability design like token usage tracking and Sentry-based operational monitoring",
+      },
+      {
+        from: "Procedure-Based Operations",
+        to: "Military's strict procedures translated to production AI system rollout processes, QA/prod separation, and workspace-aware deployment rules",
+      },
+    ],
+    recognitions: [
+      { metric: "4", label: "Official Recognitions", detail: "Torch Award, Contest Grand Prize, Early Promotion, Commander Commendation" },
+      { metric: "18mo", label: "Service Period", detail: "2020.05 — 2021.11" },
+      { metric: "4.5mo", label: "Squad Leader", detail: "Organizational leadership role" },
+      { metric: "Air-gapped", label: "stdlib only", detail: "Built with standard library only — no external packages" },
+    ],
+    skills: [
+      "Security Monitoring (UTM, Log Analysis)", "Cyber Defense", "Infrastructure Management",
+      "Air-gapped / On-premise", "Automation (stdlib only)", "Process Analysis & Automation",
+      "Team Leadership (Squad Leader)",
+    ],
+  },
+} as const;
+
+const d = data[locale];
+---
+
+<Layout title={d.layoutTitle} description={d.layoutDescription} locale={locale}>
+  <section class="mx-auto max-w-5xl px-6 py-16">
+    {/* Back link */}
+    <a href={localePath(locale, "/career")} class="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent-light)] transition-colors mb-8">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      {t(locale, "career.backToCareer")}
+    </a>
+
+    {/* Header */}
+    <div>
+      <p class="text-xs font-medium tracking-wider uppercase text-[var(--color-text-muted)] font-mono">
+        2020.05 — 2021.11
+      </p>
+      <h1 class="mt-2 text-3xl font-bold text-[var(--color-text-primary)]" style="font-family: var(--font-display);">
+        {d.headerTitle}
+      </h1>
+      <p class="mt-1 text-lg text-[var(--color-accent-light)]">{d.headerOrg}</p>
+      <p class="mt-1 text-sm text-[var(--color-text-muted)]">{d.headerLocation}</p>
+    </div>
+
+    <p class="mt-6 text-base leading-relaxed text-[var(--color-text-secondary)] max-w-3xl">
+      {d.description}
+    </p>
+    <p class="mt-2 text-xs text-[var(--color-text-muted)] italic">
+      {d.disclaimer}
+    </p>
+
+    {/* Recognition Banner */}
+    <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+      {d.recognitions.map((r) => (
+        <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 text-center">
+          <p class="text-xl font-bold text-[var(--color-accent-light)]" style="font-family: var(--font-display);">{r.metric}</p>
+          <p class="mt-1 text-xs font-medium text-[var(--color-text-primary)]">{r.label}</p>
+          <p class="mt-0.5 text-xs text-[var(--color-text-muted)]">{r.detail}</p>
+        </div>
+      ))}
+    </div>
+
+    {/* Responsibilities */}
+    <div class="mt-12">
+      <div class="section-heading">
+        <span class="section-icon" aria-hidden="true">💼</span>
+        <h2 class="text-lg font-semibold">{t(locale, "career.responsibilities")}</h2>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        {d.responsibilities.map((r) => (
+          <div class="responsibility-card">
+            <div class="resp-icon" aria-hidden="true">{r.icon}</div>
+            <p class="text-sm text-[var(--color-text-secondary)] leading-relaxed">{r.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Service Timeline */}
+    <div class="mt-12">
+      <div class="section-heading">
+        <span class="section-icon" aria-hidden="true">📅</span>
+        <h2 class="text-lg font-semibold">{d.serviceTimelineHeading}</h2>
+      </div>
+      <div class="space-y-0">
+        {d.serviceTimeline.map((tl, i) => (
+          <div class="relative pl-8 pb-5 last:pb-0">
+            {i < d.serviceTimeline.length - 1 && (
+              <div class="absolute left-[5px] top-2 bottom-0 w-px bg-[var(--color-border)]"></div>
+            )}
+            <div class:list={[
+              "absolute left-0 top-2 h-[11px] w-[11px] rounded-full border-2",
+              i === d.serviceTimeline.length - 1
+                ? "border-[var(--color-accent)] bg-[var(--color-accent)]/20"
+                : "border-[var(--color-border)] bg-[var(--color-bg-secondary)]",
+            ]}></div>
+            <p class="text-xs font-mono text-[var(--color-text-muted)]">{tl.date}</p>
+            <p class="mt-0.5 text-sm text-[var(--color-text-secondary)]">{tl.event}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Connection to Later Career */}
+    <div class="mt-12">
+      <div class="section-heading">
+        <span class="section-icon" aria-hidden="true">🔗</span>
+        <h2 class="text-lg font-semibold">{t(locale, "career.connection")}</h2>
+      </div>
+      <div class="space-y-3">
+        {d.connections.map((c) => (
+          <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+            <p class="text-sm font-medium text-[var(--color-accent-light)]">{c.from}</p>
+            <p class="mt-1 text-sm text-[var(--color-text-secondary)]">{c.to}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Skills */}
+    <div class="mt-12">
+      <div class="section-heading">
+        <span class="section-icon" aria-hidden="true">⚙️</span>
+        <h2 class="text-lg font-semibold">{t(locale, "career.skills")}</h2>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        {d.skills.map((s) => (
+          <span class="tag-pill rounded-full px-3 py-1 text-xs font-mono">{s}</span>
+        ))}
+      </div>
+    </div>
+
+    <PageCTA locale={locale} links={[
+      { label: t(locale, "cta.allProjects"), href: "/projects", primary: true },
+      { label: t(locale, "cta.viewSkills"), href: "/skills" },
+    ]} />
+  </section>
+</Layout>

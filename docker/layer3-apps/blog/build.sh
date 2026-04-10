@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Astro 블로그 빌드 및 배포 스크립트
+# 포트폴리오 웹사이트 빌드 및 배포 스크립트
 # 사용법: bash build.sh
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,7 +9,7 @@ SRC_DIR="${SCRIPT_DIR}/src"
 BUILD_OUTPUT="${SRC_DIR}/dist"
 DEPLOY_TARGET="/mnt/archive/astro-blog/dist"
 
-echo "[Astro Blog] 빌드 시작"
+echo "[Portfolio] 빌드 시작"
 
 # 소스 디렉토리 확인
 if [[ ! -d "$SRC_DIR" ]]; then
@@ -21,9 +21,16 @@ if [[ ! -d "$SRC_DIR" ]]; then
   exit 1
 fi
 
-# Node.js 확인
+# Node.js 확인 (>=22.12.0 필요)
 if ! command -v node &>/dev/null; then
   echo "오류: Node.js가 설치되지 않았습니다."
+  exit 1
+fi
+
+NODE_VER=$(node -v | sed 's/^v//')
+NODE_MAJOR=$(echo "$NODE_VER" | cut -d. -f1)
+if [[ "$NODE_MAJOR" -lt 22 ]]; then
+  echo "오류: Node.js >= 22.12.0 이 필요합니다. 현재 버전: v${NODE_VER}"
   exit 1
 fi
 
@@ -82,7 +89,7 @@ fi
 
 echo ""
 echo "========================================="
-echo "[Astro Blog] 빌드 및 배포 완료"
+echo "[Portfolio] 빌드 및 배포 완료"
 echo "배포 경로: $DEPLOY_TARGET"
 echo "NPM Proxy Host를 통해 접속하세요."
 echo "========================================="

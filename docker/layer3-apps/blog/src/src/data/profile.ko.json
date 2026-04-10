@@ -1,0 +1,24 @@
+{
+  "name": {
+    "en": "Seongjin Lee",
+    "ko": "이성진"
+  },
+  "tagline": "AI 엔지니어 — LLM 시스템 · Legal AI · 워크플로우 & 에이전트 플랫폼",
+  "bio": "법률 문서 인텔리전스를 위한 프로덕션 LLM 시스템과 AI 워크플로우/에이전트 플랫폼을 구축하는 AI 엔지니어. 계약서 검토 AI(특허 등록), 셀프서브 플레이북 플랫폼, 법률 서면·계약서 작성·비교 검토·인허가 규제 검토 등 실무 업무를 워크플로우화한 LangGraph 기반 엔진을 출시. 계약 분석 벤치마크를 직접 설계하고 이를 기반으로 도메인 특화 모델을 학습·서비스에 적용. predibase/lorax에 4개 PR 머지.",
+  "heroSubtitle": "계약서 검토부터 에이전트 워크플로우까지 — 법률 전문가를 위한 프로덕션 AI 시스템 구축",
+  "links": {
+    "github": "https://github.com/GirinMan",
+    "linkedin": "https://www.linkedin.com/in/girinman",
+    "huggingface": "https://huggingface.co/GirinMan",
+    "email": "lsjg9909@hanyang.ac.kr"
+  },
+  "location": "대한민국",
+  "currentRole": "BHSN AI 엔지니어",
+  "education": {
+    "school": "한양대학교",
+    "degree": "컴퓨터소프트웨어학부 공학사",
+    "period": "2018 - 2023",
+    "gpa": "4.14 / 4.50",
+    "honors": ["우수 졸업 (Summa Cum Laude)", "조기 졸업 (1학기)", "전액 장학금 (4학기)"]
+  }
+}

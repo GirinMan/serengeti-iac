@@ -1,0 +1,15 @@
+---
+import OssDetailPage from "../../../components/pages/OssDetailPage.astro";
+import { getOssPrs } from "../../../data/opensource-prs";
+import type { GetStaticPaths } from "astro";
+
+export const getStaticPaths: GetStaticPaths = () => {
+  return getOssPrs("en").map((pr) => ({
+    params: { slug: pr.slug },
+    props: { pr },
+  }));
+};
+
+const { pr } = Astro.props;
+---
+<OssDetailPage locale="en" pr={pr} />

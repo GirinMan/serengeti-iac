@@ -1,0 +1,152 @@
+---
+import Layout from "../Layout.astro";
+import { getOssPrs } from "../../data/opensource-prs";
+import { t, localePath } from "../../i18n";
+
+interface Props {
+  locale: "ko" | "en";
+  pr: any;
+}
+
+const { locale, pr } = Astro.props;
+const ossPrs = getOssPrs(locale);
+
+const relatedProjectLabel = locale === "ko" ? "관련 프로젝트 보기" : "View related project";
+const otherPrsLabel = locale === "ko" ? "다른 PR 보기" : "Other PRs";
+---
+
+<Layout title={`PR #${pr.number} — ${pr.title}`} description={pr.description} locale={locale}>
+  <section class="mx-auto max-w-4xl px-6 py-16">
+    <!-- Back link -->
+    <a href={localePath(locale, "/opensource")} class="inline-flex items-center gap-1 text-sm font-mono text-[var(--color-text-muted)] hover:text-[var(--color-accent-light)] transition-colors mb-8">
+      &larr; {t(locale, "opensource.back")}
+    </a>
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <span class="font-mono text-lg font-bold text-[var(--color-terminal-green)]">#{pr.number}</span>
+          <h1 class="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]" style="font-family: var(--font-display);">
+            {pr.title}
+          </h1>
+        </div>
+        <div class="mt-2 flex items-center gap-4 text-sm">
+          <a href={pr.repoUrl} target="_blank" rel="noopener" class="font-mono text-[var(--color-accent-light)] hover:underline">
+            {pr.repo}
+          </a>
+          <span class="flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-[var(--color-terminal-green)]" aria-hidden="true"></span>
+            <span class="font-mono text-xs text-[var(--color-terminal-green)]">{t(locale, "opensource.merged")}</span>
+            <span class="font-mono text-xs text-[var(--color-text-muted)]">{pr.mergedDate}</span>
+          </span>
+        </div>
+      </div>
+
+      <a
+        href={pr.prUrl}
+        target="_blank"
+        rel="noopener"
+        class="shrink-0 inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2 text-sm font-mono text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent-light)] transition-colors"
+      >
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        {t(locale, "opensource.viewPr")}
+      </a>
+    </div>
+
+    <!-- Tags -->
+    <div class="mt-4 flex flex-wrap gap-2">
+      {pr.tags.map((tag) => (
+        <span class="tag-pill rounded-full px-3 py-1 text-xs font-medium font-mono">{tag}</span>
+      ))}
+    </div>
+
+    <!-- Description -->
+    <p class="mt-6 text-base leading-relaxed text-[var(--color-text-secondary)]">
+      {pr.description}
+    </p>
+
+    <!-- What Changed -->
+    <div class="mt-10">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="font-mono text-sm text-[var(--color-accent)]" aria-hidden="true">##</span>
+        <h2 class="text-lg font-semibold text-[var(--color-text-primary)]" style="font-family: var(--font-display);">
+          {t(locale, "opensource.whatChanged")}
+        </h2>
+      </div>
+      <ul class="space-y-2 ml-5">
+        {pr.whatChanged.map((item) => (
+          <li class="text-sm text-[var(--color-text-secondary)] flex items-start gap-2">
+            <span class="text-[var(--color-accent-dark)] mt-0.5 shrink-0" aria-hidden="true">▸</span>
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <!-- Why It Matters -->
+    <div class="mt-10">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="font-mono text-sm text-[var(--color-accent)]" aria-hidden="true">##</span>
+        <h2 class="text-lg font-semibold text-[var(--color-text-primary)]" style="font-family: var(--font-display);">
+          {t(locale, "opensource.whyItMatters")}
+        </h2>
+      </div>
+      <p class="text-sm leading-relaxed text-[var(--color-text-secondary)] ml-5">
+        {pr.whyItMatters}
+      </p>
+    </div>
+
+    <!-- Technical Detail -->
+    <div class="mt-10">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="font-mono text-sm text-[var(--color-accent)]" aria-hidden="true">##</span>
+        <h2 class="text-lg font-semibold text-[var(--color-text-primary)]" style="font-family: var(--font-display);">
+          {t(locale, "opensource.technicalDetail")}
+        </h2>
+      </div>
+      <div class="ml-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4">
+        <p class="text-sm leading-relaxed text-[var(--color-text-secondary)] font-mono">
+          {pr.technicalDetail}
+        </p>
+      </div>
+    </div>
+
+    <!-- Related Internal Work -->
+    <div class="mt-10">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="font-mono text-sm text-[var(--color-accent)]" aria-hidden="true">##</span>
+        <h2 class="text-lg font-semibold text-[var(--color-text-primary)]" style="font-family: var(--font-display);">
+          {t(locale, "opensource.relatedWork")}
+        </h2>
+      </div>
+      <p class="text-sm leading-relaxed text-[var(--color-text-secondary)] ml-5">
+        {pr.relatedWork}
+      </p>
+      {pr.relatedProjectUrl && (
+        <a
+          href={localePath(locale, pr.relatedProjectUrl)}
+          class="mt-3 ml-5 inline-flex items-center gap-1.5 text-sm font-mono text-[var(--color-accent-light)] hover:text-[var(--color-accent)] hover:underline transition-colors"
+        >
+          {relatedProjectLabel} &rarr;
+        </a>
+      )}
+    </div>
+
+    <!-- Navigation to other PRs -->
+    <div class="mt-16 pt-8 border-t border-[var(--color-border)]">
+      <p class="text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider mb-4">{otherPrsLabel}</p>
+      <div class="flex flex-wrap gap-3">
+        {ossPrs.filter((p) => p.slug !== pr.slug).map((p) => (
+          <a
+            href={localePath(locale, `/opensource/${p.slug}`)}
+            class="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm transition-colors hover:border-[var(--color-accent-dark)] hover:bg-[var(--color-bg-hover)]"
+          >
+            <span class="font-mono text-xs text-[var(--color-terminal-green)]">#{p.number}</span>
+            <span class="text-[var(--color-text-secondary)]">{p.title}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+</Layout>

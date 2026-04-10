@@ -1,0 +1,797 @@
+---
+interface Props {
+  locale: "ko" | "en";
+}
+
+const { locale } = Astro.props;
+
+const title = locale === "ko" ? "AI 산업 역량 레이어" : "AI Industry Competency Layers";
+const subtitle = locale === "ko"
+  ? "Jensen Huang의 5-Layer 모델 기반 역량 분포 (GTC 2025)"
+  : "Competency map based on Jensen Huang's 5-Layer Model (GTC 2025)";
+const hintText = locale === "ko" ? "드래그: 회전 \u00B7 스크롤: 확대/축소" : "Drag: rotate \u00B7 Scroll: zoom";
+const showAllLabel = locale === "ko" ? "전체 보기" : "Show All";
+const dividerLabel = locale === "ko" ? "상세 스킬 카드" : "Detailed Skill Cards";
+
+interface PanelSub {
+  num: string;
+  label: string;
+  desc: string;
+  tags: string[];
+}
+interface PanelLayer {
+  idx: number;
+  num: string;
+  css: string;
+  label: string;
+  labelEn: string;
+  desc: string;
+  categories: string[];
+  sublayers: PanelSub[] | null;
+}
+
+const panelLayers: PanelLayer[] = [
+  {
+    idx: 4, num: "05", css: "c5",
+    label: locale === "ko" ? "애플리케이션" : "Applications",
+    labelEn: "Applications",
+    desc: locale === "ko" ? "LLM 서비스부터 에이전트 워크플로우까지" : "From LLM services to agent workflows",
+    categories: ["applications", "applications-agent"],
+    sublayers: [
+      { num: "5.2", label: locale === "ko" ? "에이전트 & 워크플로우" : "Agents & Workflows", desc: locale === "ko" ? "LangGraph, 도구 호출, 워크플로우 오케스트레이션" : "LangGraph, tool calling, workflow orchestration", tags: ["LANGGRAPH", "TOOL CALLING"] },
+      { num: "5.1", label: locale === "ko" ? "LLM 앱 & 서비스" : "LLM Apps & Services", desc: locale === "ko" ? "법률 AI, 계약서 검토, 프롬프트 엔지니어링" : "Legal AI, contract review, prompt engineering", tags: ["LEGAL AI", "PROMPT"] },
+    ]
+  },
+  {
+    idx: 3, num: "04", css: "c4",
+    label: locale === "ko" ? "모델" : "Models",
+    labelEn: "Models",
+    desc: locale === "ko" ? "기반 모델부터 평가 시스템까지" : "From foundation models to evaluation systems",
+    categories: ["models-foundation", "models-domain", "models-evaluation"],
+    sublayers: [
+      { num: "4.3", label: locale === "ko" ? "평가 & 품질" : "Evaluation & Quality", desc: locale === "ko" ? "LLM-as-a-Judge, G-Eval, 20+ 자동 평가 메트릭" : "LLM-as-a-Judge, G-Eval, 20+ metrics", tags: ["LLM-AS-JUDGE", "G-EVAL"] },
+      { num: "4.2", label: locale === "ko" ? "도메인 특화" : "Domain Specialization", desc: locale === "ko" ? "SFT, DPO/RLHF, LoRA/PEFT, 법률 NLP, RAG" : "SFT, DPO/RLHF, LoRA/PEFT, Legal NLP, RAG", tags: ["FINE-TUNING", "RETRIEVAL"] },
+      { num: "4.1", label: locale === "ko" ? "파운데이션 모델" : "Foundation Models", desc: locale === "ko" ? "구조화 출력, Long-Context, CoT 추론" : "Structured output, Long-Context, CoT reasoning", tags: ["STRUCTURED OUTPUT", "COT"] },
+    ]
+  },
+  {
+    idx: 2, num: "03", css: "c3",
+    label: locale === "ko" ? "인프라" : "Infrastructure",
+    labelEn: "Infrastructure",
+    desc: locale === "ko" ? "모델 서빙, 백엔드, 클라우드 인프라" : "Model serving, backend, cloud infrastructure",
+    categories: ["infrastructure-serving", "infrastructure"],
+    sublayers: null,
+  },
+  {
+    idx: 1, num: "02", css: "c2",
+    label: locale === "ko" ? "칩" : "Chips",
+    labelEn: "Chips",
+    desc: locale === "ko" ? "GPU \u00B7 HBM \u00B7 가속 컴퓨팅 프로세서" : "GPU \u00B7 HBM \u00B7 Accelerated computing",
+    categories: ["chips"],
+    sublayers: null,
+  },
+  {
+    idx: 0, num: "01", css: "c1",
+    label: locale === "ko" ? "공통 역량" : "Cross-cutting",
+    labelEn: "Cross-cutting",
+    desc: locale === "ko" ? "프로그래밍 언어, 도구, 협업, 리더십" : "Languages, tools, collaboration, leadership",
+    categories: ["cross-cutting", "cross-cutting-collab"],
+    sublayers: null,
+  },
+];
+---
+
+<div class="stack3d-container" id="skill-tower-3d">
+  <!-- Header -->
+  <div class="s3d-header">
+    <h2 class="s3d-title">{title}</h2>
+    <p class="s3d-subtitle">{subtitle}</p>
+  </div>
+
+  <!-- Canvas -->
+  <div class="s3d-canvas-wrap" id="s3d-canvas-wrap">
+    <div class="s3d-hint" id="s3d-hint">{hintText}</div>
+  </div>
+
+  <!-- Layer Panel (horizontal, below canvas) -->
+  <div class="s3d-panel" id="s3d-panel">
+    {panelLayers.map((layer) => (
+      <div class={`s3d-li ${layer.css}`} data-idx={String(layer.idx)} data-categories={JSON.stringify(layer.categories)}>
+        <div class="s3d-li-hd">
+          <span class="s3d-li-dot"></span>
+          <div>
+            <div class="s3d-li-num">L{layer.num}</div>
+            <div class="s3d-li-tt">{layer.label}</div>
+          </div>
+        </div>
+        <div class="s3d-li-ds">{layer.desc}</div>
+        {layer.sublayers && (
+          <div class="s3d-li-sb">
+            {layer.sublayers.map((sub) => (
+              <div class="s3d-si">
+                <div class="s3d-si-sn">{sub.num}</div>
+                <div class="s3d-si-st">{sub.label}</div>
+                <div class="s3d-si-tg">
+                  {sub.tags.map((tag) => <span>{tag}</span>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+
+  <!-- Divider (mobile/tablet only) -->
+  <div class="s3d-divider" aria-hidden="true">
+    <div class="s3d-divider-line"></div>
+    <span class="s3d-divider-label">{dividerLabel} &darr;</span>
+    <div class="s3d-divider-line"></div>
+  </div>
+
+  <!-- Show All button -->
+  <button class="s3d-show-all" id="s3d-show-all" style="display: none;" aria-label={showAllLabel}>
+    <span aria-hidden="true">&#x2630;</span> {showAllLabel}
+  </button>
+</div>
+
+<!-- ======================== THREE.JS SCENE ======================== -->
+<script>
+import * as THREE from 'three';
+
+document.addEventListener('astro:page-load', () => {
+  const wrap = document.getElementById('s3d-canvas-wrap') as HTMLElement | null;
+  if (!wrap) return;
+  // Remove any existing canvas (View Transitions re-init)
+  const oldCanvas = wrap.querySelector('canvas');
+  if (oldCanvas) oldCanvas.remove();
+
+  let W = wrap.clientWidth, H = wrap.clientHeight;
+  if (H < 200) H = 720;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x08090c, 0.01);
+  const cam = new THREE.PerspectiveCamera(36, W / H, 0.1, 500);
+  const ren = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  ren.setSize(W, H);
+  ren.setPixelRatio(Math.min(devicePixelRatio, 2));
+  ren.setClearColor(0x0a0b0f, 1);
+  ren.shadowMap.enabled = true;
+  ren.shadowMap.type = THREE.PCFSoftShadowMap;
+  ren.toneMapping = THREE.ACESFilmicToneMapping;
+  ren.toneMappingExposure = 1.2;
+  wrap.insertBefore(ren.domElement, wrap.firstChild);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0x485060, 0.6));
+  const dL = new THREE.DirectionalLight(0xfff4e0, 1.4);
+  dL.position.set(10, 20, 14); dL.castShadow = true;
+  dL.shadow.mapSize.set(2048, 2048);
+  dL.shadow.camera.near = 1; dL.shadow.camera.far = 55;
+  dL.shadow.camera.left = -20; dL.shadow.camera.right = 20;
+  dL.shadow.camera.top = 20; dL.shadow.camera.bottom = -20;
+  dL.shadow.bias = -0.0008;
+  scene.add(dL);
+  const fL = new THREE.DirectionalLight(0x7888b0, 0.5);
+  fL.position.set(-10, 8, -6); scene.add(fL);
+  const rL = new THREE.PointLight(0xe8a838, 0.5, 40);
+  rL.position.set(-7, 16, -10); scene.add(rL);
+  const lL = new THREE.DirectionalLight(0xaabbdd, 0.4);
+  lL.position.set(-12, 10, 8); scene.add(lL);
+
+  // Ground
+  const gnd = new THREE.Mesh(
+    new THREE.PlaneGeometry(60, 60),
+    new THREE.MeshStandardMaterial({ color: 0x08090c, roughness: 0.85, metalness: 0.3 })
+  );
+  gnd.rotation.x = -Math.PI / 2; gnd.position.y = -0.6; gnd.receiveShadow = true;
+  scene.add(gnd);
+  const gr = new THREE.GridHelper(30, 30, 0x16171f, 0x16171f);
+  gr.position.y = -0.58;
+  (gr.material as THREE.Material).transparent = true;
+  (gr.material as THREE.Material).opacity = 0.5;
+  scene.add(gr);
+
+  // Helpers
+  function hx(c: number) { return { r: (c >> 16) & 255, g: (c >> 8) & 255, b: c & 255 }; }
+  function rr(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+    c.beginPath(); c.moveTo(x + r, y); c.lineTo(x + w - r, y);
+    c.quadraticCurveTo(x + w, y, x + w, y + r); c.lineTo(x + w, y + h - r);
+    c.quadraticCurveTo(x + w, y + h, x + w - r, y + h); c.lineTo(x + r, y + h);
+    c.quadraticCurveTo(x, y + h, x, y + h - r); c.lineTo(x, y + r);
+    c.quadraticCurveTo(x, y, x + r, y);
+  }
+
+  const LW = 7, LD = 5.5, GAP = 0.35, SW = LW - 0.7, SD = LD - 0.7, SUB_H = 0.72;
+
+  function drawIcon(ctx: CanvasRenderingContext2D, key: number | string, cx: number, cy: number, s: number) {
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (key === 1) {
+      // Cross-cutting: network/lightning
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
+      for (let i = 1; i <= 3; i++) {
+        const rd = s * 0.12 + i * s * 0.065;
+        ctx.beginPath(); ctx.arc(cx, cy, rd, -0.5, 0.5); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, rd, Math.PI - 0.5, Math.PI + 0.5); ctx.stroke();
+      }
+      ctx.fillStyle = '#fff'; ctx.beginPath();
+      ctx.moveTo(cx + s * 0.04, cy - s * 0.15); ctx.lineTo(cx - s * 0.08, cy + s * 0.02);
+      ctx.lineTo(cx + s * 0.02, cy + s * 0.02); ctx.lineTo(cx - s * 0.04, cy + s * 0.15);
+      ctx.lineTo(cx + s * 0.12, cy - s * 0.02); ctx.lineTo(cx + s * 0.04, cy - s * 0.02);
+      ctx.closePath(); ctx.fill();
+    } else if (key === 2) {
+      // Chips: grid
+      const hs = s * 0.18; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
+      ctx.strokeRect(cx - hs, cy - hs, hs * 2, hs * 2);
+      ctx.fillStyle = '#fff'; const g2 = hs * 2 / 4;
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+        ctx.beginPath(); ctx.arc(cx - hs + g2 * (i + 0.5), cy - hs + g2 * (j + 0.5), 1.8, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.lineWidth = 2.5;
+      for (let i = 0; i < 5; i++) {
+        const o = hs * 2 / 5 * (i + 0.5) - hs;
+        ctx.beginPath(); ctx.moveTo(cx + o, cy - hs); ctx.lineTo(cx + o, cy - hs - s * 0.05); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx + o, cy + hs); ctx.lineTo(cx + o, cy + hs + s * 0.05); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx - hs, cy + o); ctx.lineTo(cx - hs - s * 0.05, cy + o); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx + hs, cy + o); ctx.lineTo(cx + hs + s * 0.05, cy + o); ctx.stroke();
+      }
+    } else if (key === 3) {
+      // Infrastructure: server rack
+      const rw = s * 0.25, rh = s * 0.34, rx = cx - rw / 2, ry = cy - rh / 2;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.strokeRect(rx, ry, rw, rh);
+      const un = 4, uh = rh / (un + 0.3);
+      for (let i = 0; i < un; i++) {
+        const uy = ry + uh * (i + 0.2);
+        ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.fillRect(rx + 3, uy, rw - 6, uh * 0.4);
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(rx + rw - 5, uy + uh * 0.2, 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (key === 4) {
+      // Models: neural network
+      const cols = [[-s * 0.12, 3], [0, 4], [s * 0.12, 3]];
+      const nodes: { x: number; y: number }[][] = [];
+      cols.forEach(([xo, cnt]) => { const ln: { x: number; y: number }[] = []; for (let i = 0; i < cnt; i++) ln.push({ x: cx + xo, y: cy + (i - (cnt - 1) / 2) * s * 0.08 }); nodes.push(ln); });
+      ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1;
+      for (let l = 0; l < nodes.length - 1; l++) nodes[l].forEach(a => nodes[l + 1].forEach(b => { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }));
+      nodes.forEach(l => l.forEach(n => { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(n.x, n.y, 3, 0, Math.PI * 2); ctx.fill(); }));
+    } else if (key === 5) {
+      // Applications: window
+      const bw = s * 0.3, bh = s * 0.24, bx = cx - bw / 2, by = cy - bh / 2;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; rr(ctx, bx, by, bw, bh, 3); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(bx, by, bw, bh * 0.18);
+      ctx.fillStyle = '#fff';
+      [0, 1, 2].forEach(i => { ctx.beginPath(); ctx.arc(bx + 5 + i * 5, by + bh * 0.09, 1.3, 0, Math.PI * 2); ctx.fill(); });
+      ctx.fillStyle = 'rgba(255,255,255,.5)';
+      const ly = by + bh * 0.32;
+      ctx.fillRect(bx + 6, ly, bw * 0.4, 2); ctx.fillRect(bx + 6, ly + 6, bw * 0.28, 2);
+    } else if (key === '4.1') {
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.arc(cx, cy, s * 0.14, 0, Math.PI * 2); ctx.stroke();
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI * 2 / 6 * i;
+        ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * s * 0.14, cy + Math.sin(a) * s * 0.14);
+        ctx.lineTo(cx + Math.cos(a) * s * 0.24, cy + Math.sin(a) * s * 0.24); ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * s * 0.24, cy + Math.sin(a) * s * 0.24, 2, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx, cy, s * 0.04, 0, Math.PI * 2); ctx.fill();
+    } else if (key === '4.2') {
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(cx - s * 0.13, cy - s * 0.11); ctx.lineTo(cx + s * 0.13, cy - s * 0.11);
+      ctx.lineTo(cx + s * 0.05, cy + s * 0.11); ctx.lineTo(cx - s * 0.05, cy + s * 0.11); ctx.closePath(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx - s * 0.09, cy - s * 0.01); ctx.lineTo(cx + s * 0.09, cy - s * 0.01); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx, cy + s * 0.05, 2.5, 0, Math.PI * 2); ctx.fill();
+    } else if (key === '4.3') {
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
+      const bw2 = s * 0.2, bh2 = s * 0.05;
+      [-1, 0, 1].forEach(i => {
+        const by2 = cy + i * s * 0.1; const w2 = bw2 - Math.abs(i) * s * 0.03;
+        ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(cx - w2 / 2, by2 - bh2 / 2, w2, bh2);
+        ctx.strokeRect(cx - w2 / 2, by2 - bh2 / 2, w2, bh2);
+      });
+      ctx.beginPath(); ctx.moveTo(cx, cy - s * 0.18); ctx.lineTo(cx, cy - s * 0.13); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy + s * 0.18); ctx.lineTo(cx, cy + s * 0.13); ctx.stroke();
+    } else if (key === '5.1') {
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.8; rr(ctx, cx - s * 0.14, cy - s * 0.1, s * 0.28, s * 0.16, 3); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(cx - s * 0.08, cy - s * 0.03, s * 0.14, 2);
+      ctx.fillRect(cx - s * 0.08, cy + s * 0.02, s * 0.1, 2);
+    } else if (key === '5.2') {
+      const pts = [{ x: cx - s * 0.14, y: cy }, { x: cx, y: cy - s * 0.09 }, { x: cx, y: cy + s * 0.09 }, { x: cx + s * 0.14, y: cy }];
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y); ctx.lineTo(pts[1].x, pts[1].y);
+      ctx.moveTo(pts[0].x, pts[0].y); ctx.lineTo(pts[2].x, pts[2].y);
+      ctx.moveTo(pts[1].x, pts[1].y); ctx.lineTo(pts[3].x, pts[3].y);
+      ctx.moveTo(pts[2].x, pts[2].y); ctx.lineTo(pts[3].x, pts[3].y); ctx.stroke();
+      pts.forEach(p => { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill(); });
+    }
+    ctx.restore();
+  }
+
+  interface TexCfg { color: number; num: number | string; en: string; icon: number | string; sub?: boolean; flip?: boolean; }
+
+  function mkFaceTex(faceW: number, faceH: number, cfg: TexCfg) {
+    const cw = 1024, ch = Math.round(1024 * (faceH / faceW));
+    const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+    const c = cv.getContext('2d')!; const w = cv.width, h = cv.height;
+    const { r, g, b } = hx(cfg.color);
+    const bgM = cfg.sub ? 0.55 : 0.38;
+    c.fillStyle = `rgb(${r * bgM | 0},${g * bgM | 0},${b * bgM | 0})`; c.fillRect(0, 0, w, h);
+    const gs = cfg.sub ? Math.max(12, h * 0.18 | 0) : Math.max(18, h * 0.08 | 0);
+    c.strokeStyle = `rgba(${r},${g},${b},.04)`; c.lineWidth = 0.5;
+    for (let x = 0; x < w; x += gs) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+    for (let y = 0; y < h; y += gs) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+    if (cfg.flip) { c.save(); c.translate(w, 0); c.scale(-1, 1); }
+    if (!cfg.sub) {
+      const fs = Math.min(h * 0.6, w * 0.07) | 0;
+      const iconS = fs * 2.2; const iconX = w * 0.045 + iconS * 0.35;
+      drawIcon(c, cfg.icon, iconX, h / 2, iconS);
+      const textX = w * 0.045 + iconS * 0.75 + w * 0.03;
+      c.fillStyle = '#ffffff'; c.font = `700 ${fs}px "Segoe UI",sans-serif`; c.textAlign = 'left'; c.textBaseline = 'middle';
+      c.fillText(`${String(cfg.num).padStart(2, '0')}  ${cfg.en}`, textX, h / 2);
+      c.fillStyle = `rgba(${r},${g},${b},.8)`;
+      const tm = c.measureText(`${String(cfg.num).padStart(2, '0')}  ${cfg.en}`);
+      c.fillRect(textX, h / 2 + fs * 0.5, Math.min(tm.width, w * 0.4), Math.max(2, h * 0.014));
+    } else {
+      const fs = Math.min(h * 0.48, w * 0.05) | 0;
+      const iconS = fs * 2.5; const iconX = w * 0.06 + iconS * 0.38;
+      drawIcon(c, cfg.icon, iconX, h / 2, iconS);
+      c.fillStyle = '#ffffff'; c.font = `700 ${fs}px "Segoe UI",sans-serif`; c.textAlign = 'right'; c.textBaseline = 'middle';
+      c.fillText(`${cfg.num}  ${cfg.en}`, w * 0.94, h / 2);
+    }
+    if (cfg.flip) c.restore();
+    const t = new THREE.CanvasTexture(cv); t.needsUpdate = true; return t;
+  }
+
+  function mkTopTex(faceW: number, faceD: number, color: number) {
+    const cw = 1024, ch = Math.round(1024 * (faceD / faceW));
+    const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+    const c = cv.getContext('2d')!; const { r, g, b } = hx(color);
+    c.fillStyle = `rgb(${r * 0.22 | 0},${g * 0.22 | 0},${b * 0.22 | 0})`; c.fillRect(0, 0, cv.width, cv.height);
+    c.fillStyle = `rgba(${r},${g},${b},.05)`;
+    for (let x = 10; x < cv.width; x += 10) for (let y = 10; y < cv.height; y += 10) { c.beginPath(); c.arc(x, y, 0.5, 0, Math.PI * 2); c.fill(); }
+    const t = new THREE.CanvasTexture(cv); t.needsUpdate = true; return t;
+  }
+
+  interface LayerDef {
+    h: number; color: number; em: number; num: number; en: string; icon: number;
+    subs?: { h: number; color: number; num: string; en: string; icon: string }[];
+  }
+
+  const layers: LayerDef[] = [
+    { h: 1, color: 0x4a90d9, em: 0x152a48, num: 1, en: 'Cross-cutting', icon: 1 },
+    { h: 1, color: 0x3cbfa0, em: 0x0c2e22, num: 2, en: 'Chips', icon: 2 },
+    { h: 1, color: 0x8b7bd4, em: 0x1c1638, num: 3, en: 'Infrastructure', icon: 3 },
+    { h: 3.2, color: 0xe07a5f, em: 0x381510, num: 4, en: 'Models', icon: 4, subs: [
+      { h: SUB_H, color: 0xd4704f, num: '4.1', en: 'Foundation', icon: '4.1' },
+      { h: SUB_H, color: 0xc86040, num: '4.2', en: 'Domain', icon: '4.2' },
+      { h: SUB_H, color: 0xb85030, num: '4.3', en: 'Evaluation', icon: '4.3' },
+    ]},
+    { h: 2.4, color: 0xe8a838, em: 0x382208, num: 5, en: 'Applications', icon: 5, subs: [
+      { h: SUB_H, color: 0xd89828, num: '5.1', en: 'LLM Apps', icon: '5.1' },
+      { h: SUB_H, color: 0xc88818, num: '5.2', en: 'Agents', icon: '5.2' },
+    ]},
+  ];
+
+  function mkM(c: number, em: number, o?: Record<string, unknown>) {
+    return new THREE.MeshPhysicalMaterial(Object.assign({
+      color: c, emissive: em || 0, emissiveIntensity: 0.18, roughness: 0.24, metalness: 0.2,
+      clearcoat: 1, clearcoatRoughness: 0.08, reflectivity: 0.55
+    }, o || {}));
+  }
+
+  function addEdge(g: THREE.Group, geo: THREE.BufferGeometry, c: number | THREE.Color, pos: THREE.Vector3) {
+    const e = new THREE.LineSegments(
+      new THREE.EdgesGeometry(geo),
+      new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.2 })
+    );
+    e.position.copy(pos); g.add(e);
+  }
+
+  const stack = new THREE.Group();
+  const groups: THREE.Group[] = [];
+  let cy2 = 0;
+
+  layers.forEach(L => {
+    const g = new THREE.Group();
+    if (L.subs) {
+      const sGeo = new THREE.BoxGeometry(LW, L.h, LD);
+      const sTex = mkFaceTex(LW, L.h, { color: L.color, num: L.num, en: L.en, icon: L.icon });
+      const sTop = mkTopTex(LW, LD, L.color);
+      const sb = mkM(L.color, L.em, { transparent: true, opacity: 0.15, depthWrite: false, side: THREE.DoubleSide });
+      const sf = mkM(0xffffff, 0x000000, { transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide, map: sTex, emissiveIntensity: 0 });
+      const st2 = mkM(L.color, L.em, { transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide, map: sTop });
+      const shell = new THREE.Mesh(sGeo, [sb, sb, st2, sb, sf, sb]);
+      shell.position.y = cy2 + L.h / 2; shell.castShadow = true; shell.receiveShadow = true; shell.renderOrder = 1;
+      g.add(shell); addEdge(g, sGeo, L.color, shell.position);
+
+      const sg = 0.16;
+      const tsh = L.subs.length * SUB_H + (L.subs.length - 1) * sg;
+      let sy = cy2 + (L.h - tsh) / 2;
+      L.subs.forEach(s => {
+        const subGeo = new THREE.BoxGeometry(SW, s.h, SD);
+        const sideTex = mkFaceTex(SD, s.h, { color: s.color, num: s.num as unknown as number, en: s.en, sub: true, icon: s.icon as unknown as number });
+        const subTop = mkTopTex(SW, SD, s.color);
+        const base = mkM(s.color, L.em, { emissiveIntensity: 0.55 });
+        const side = mkM(0xffffff, 0x000000, { emissiveIntensity: 0, map: sideTex });
+        const top = mkM(s.color, L.em, { emissiveIntensity: 0.35, map: subTop });
+        const sm = new THREE.Mesh(subGeo, [base, side, top, base, base, base]);
+        sm.position.y = sy + s.h / 2; sm.castShadow = true; sm.receiveShadow = true;
+        g.add(sm);
+        addEdge(g, subGeo, new THREE.Color(L.color).offsetHSL(0, 0, 0.1), sm.position);
+        sy += s.h + sg;
+      });
+    } else {
+      const geo = new THREE.BoxGeometry(LW, L.h, LD);
+      const fTex = mkFaceTex(LW, L.h, { color: L.color, num: L.num, en: L.en, icon: L.icon });
+      const tTex = mkTopTex(LW, LD, L.color);
+      const base = mkM(L.color, L.em);
+      const front = mkM(0xffffff, 0x000000, { emissiveIntensity: 0, map: fTex });
+      const top = mkM(L.color, L.em, { map: tTex });
+      const m = new THREE.Mesh(geo, [base, base, top, base, front, base]);
+      m.position.y = cy2 + L.h / 2; m.castShadow = true; m.receiveShadow = true;
+      g.add(m); addEdge(g, geo, L.color, m.position);
+    }
+    groups.push(g); stack.add(g);
+    cy2 += L.h + GAP;
+  });
+
+  // Connection pillars between layers
+  for (let i = 0; i < layers.length - 1; i++) {
+    const y0 = layers.slice(0, i + 1).reduce((a, l) => a + l.h + GAP, 0) - GAP;
+    const y1 = y0 + GAP;
+    const col = new THREE.Color(layers[i].color).lerp(new THREE.Color(layers[i + 1].color), 0.5);
+    [[LW / 2 - 0.3, LD / 2 - 0.3], [-LW / 2 + 0.3, LD / 2 - 0.3], [LW / 2 - 0.3, -LD / 2 + 0.3], [-LW / 2 + 0.3, -LD / 2 + 0.3]].forEach(([px, pz]) => {
+      const pm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, GAP, 6), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.35 }));
+      pm.position.set(px, (y0 + y1) / 2, pz); stack.add(pm);
+      [y0, y1].forEach(dy => {
+        const dd = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.5 }));
+        dd.position.set(px, dy, pz); stack.add(dd);
+      });
+    });
+  }
+
+  // Scanline
+  const scanMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.04, side: THREE.DoubleSide });
+  const scanLine = new THREE.Mesh(new THREE.PlaneGeometry(LW + 2, 0.03), scanMat);
+  scanLine.rotation.x = -Math.PI / 2;
+  stack.add(scanLine);
+  scene.add(stack);
+
+  // Camera
+  const sph = { theta: -0.7, phi: 1.0, radius: 24 };
+  const lk = new THREE.Vector3(0, cy2 * 0.42, 0);
+  function uCam() {
+    cam.position.set(
+      sph.radius * Math.sin(sph.phi) * Math.sin(sph.theta),
+      sph.radius * Math.cos(sph.phi),
+      sph.radius * Math.sin(sph.phi) * Math.cos(sph.theta)
+    );
+    cam.lookAt(lk);
+  }
+  uCam();
+
+  // Drag
+  let drag = false;
+  const pmx = { x: 0, y: 0 };
+  ren.domElement.addEventListener('pointerdown', e => { drag = true; pmx.x = e.clientX; pmx.y = e.clientY; });
+  window.addEventListener('pointermove', e => {
+    if (!drag) return;
+    sph.theta -= (e.clientX - pmx.x) * 0.005;
+    sph.phi = Math.max(0.3, Math.min(1.45, sph.phi + (e.clientY - pmx.y) * 0.005));
+    pmx.x = e.clientX; pmx.y = e.clientY; uCam();
+  });
+  window.addEventListener('pointerup', () => { drag = false; });
+  ren.domElement.addEventListener('wheel', e => {
+    e.preventDefault();
+    sph.radius = Math.max(14, Math.min(45, sph.radius + e.deltaY * 0.025));
+    uCam();
+  }, { passive: false });
+
+  // Raycaster for click
+  const rc = new THREE.Raycaster(), mp = new THREE.Vector2();
+  ren.domElement.addEventListener('pointermove', e => {
+    const rb = ren.domElement.getBoundingClientRect();
+    mp.x = ((e.clientX - rb.left) / rb.width) * 2 - 1;
+    mp.y = -((e.clientY - rb.top) / rb.height) * 2 + 1;
+  });
+  ren.domElement.addEventListener('click', () => {
+    rc.setFromCamera(mp, cam);
+    let hit = -1, md = Infinity;
+    groups.forEach((g, i) => {
+      g.traverse(c2 => {
+        if (!(c2 as THREE.Mesh).isMesh) return;
+        const h = rc.intersectObject(c2);
+        if (h.length && h[0].distance < md) { md = h[0].distance; hit = i; }
+      });
+    });
+    if (hit >= 0) setActive(hit);
+  });
+
+  // --- Panel interaction & filtering ---
+  const panelItems = document.querySelectorAll<HTMLElement>('.s3d-li');
+  const sections = document.querySelectorAll<HTMLElement>('[data-category-section]');
+  const showAllBtn = document.getElementById('s3d-show-all');
+  let activeIdx = -1;
+
+  function setActive(idx: number) {
+    if (activeIdx === idx) { showAll(); return; }
+    activeIdx = idx;
+
+    // Panel highlight
+    panelItems.forEach(el => el.classList.toggle('on', parseInt(el.dataset.idx || '-1') === idx));
+
+    // 3D highlight
+    groups.forEach((g, i) => {
+      g.traverse(c2 => {
+        if (!(c2 as THREE.Mesh).isMesh) return;
+        const mats = Array.isArray((c2 as THREE.Mesh).material) ? (c2 as THREE.Mesh).material as THREE.MeshPhysicalMaterial[] : [(c2 as THREE.Mesh).material as THREE.MeshPhysicalMaterial];
+        mats.forEach(m => {
+          if (m.emissiveIntensity === undefined) return;
+          if ((c2 as any).userData.be === undefined) (c2 as any).userData.be = m.emissiveIntensity;
+          m.emissiveIntensity = (i === idx) ? (c2 as any).userData.be + 0.4 : (c2 as any).userData.be;
+        });
+      });
+    });
+
+    // Filter skill cards
+    const activeEl = document.querySelector<HTMLElement>(`.s3d-li[data-idx="${idx}"]`);
+    if (activeEl) {
+      const categories: string[] = JSON.parse(activeEl.dataset.categories || '[]');
+      const catSet = new Set(categories);
+      sections.forEach(s => {
+        const sectionCat = s.dataset.categorySection || '';
+        s.style.display = catSet.has(sectionCat) ? '' : 'none';
+      });
+      document.querySelectorAll<HTMLElement>('[id^="layer-"]').forEach(layerDiv => {
+        const vc = layerDiv.querySelectorAll<HTMLElement>('[data-category-section]');
+        if (vc.length === 0) return;
+        const hasV = Array.from(vc).some(c3 => c3.style.display !== 'none');
+        layerDiv.style.display = hasV ? '' : 'none';
+      });
+      if (showAllBtn) showAllBtn.style.display = '';
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function showAll() {
+    activeIdx = -1;
+    panelItems.forEach(el => el.classList.remove('on'));
+    sections.forEach(s => { s.style.display = ''; s.style.opacity = '1'; });
+    document.querySelectorAll<HTMLElement>('[id^="layer-"]').forEach(d => { d.style.display = ''; });
+    if (showAllBtn) showAllBtn.style.display = 'none';
+    // Reset 3D emissive
+    groups.forEach(g => {
+      g.traverse(c2 => {
+        if (!(c2 as THREE.Mesh).isMesh) return;
+        const mats = Array.isArray((c2 as THREE.Mesh).material) ? (c2 as THREE.Mesh).material as THREE.MeshPhysicalMaterial[] : [(c2 as THREE.Mesh).material as THREE.MeshPhysicalMaterial];
+        mats.forEach(m => { if ((c2 as any).userData.be !== undefined) m.emissiveIntensity = (c2 as any).userData.be; });
+      });
+    });
+  }
+
+  panelItems.forEach(el => {
+    const i = parseInt(el.dataset.idx || '-1');
+    el.addEventListener('mouseenter', () => setActive(i));
+    el.addEventListener('click', () => setActive(i));
+  });
+  if (showAllBtn) showAllBtn.addEventListener('click', showAll);
+
+  // Default: activate Applications layer
+  setActive(4);
+
+  // Animation loop
+  let t = 0;
+  let animId = 0;
+  function animate() {
+    animId = requestAnimationFrame(animate);
+    t += 0.008;
+    scanLine.position.y = ((t * 1.2) % (cy2 + 1)) - 0.3;
+    ren.render(scene, cam);
+  }
+  animate();
+
+  // Resize
+  function onResize() {
+    W = wrap!.clientWidth; H = wrap!.clientHeight;
+    if (H < 200) H = 720;
+    cam.aspect = W / H; cam.updateProjectionMatrix(); ren.setSize(W, H);
+  }
+  window.addEventListener('resize', onResize);
+
+  // Cleanup on navigation
+  const cleanup = () => {
+    cancelAnimationFrame(animId);
+    ren.dispose();
+    window.removeEventListener('resize', onResize);
+    document.removeEventListener('astro:before-swap', cleanup);
+  };
+  document.addEventListener('astro:before-swap', cleanup);
+});
+</script>
+
+<!-- ======================== STYLES ======================== -->
+<style>
+  .stack3d-container {
+    margin: 0;
+    position: relative;
+  }
+
+  .s3d-header {
+    margin-bottom: 1rem;
+  }
+
+  .s3d-title {
+    font-family: var(--font-display); font-size: 1.375rem; font-weight: 700;
+    color: var(--color-text-primary); letter-spacing: -0.02em; margin-bottom: 0.375rem;
+  }
+
+  .s3d-subtitle {
+    font-size: 0.8125rem; color: var(--color-text-muted); margin-bottom: 0;
+  }
+
+  /* Canvas */
+  .s3d-canvas-wrap {
+    position: relative;
+    height: 520px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(10, 11, 15, 1);
+  }
+
+  .s3d-canvas-wrap canvas { display: block; }
+
+  .s3d-hint {
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; color: #444; letter-spacing: 0.5px; pointer-events: none;
+    font-family: var(--font-mono);
+  }
+
+  /* Panel: horizontal row below canvas */
+  .s3d-panel {
+    display: flex;
+    gap: 0;
+    margin-top: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(12, 13, 18, 0.95);
+  }
+
+  .s3d-panel::-webkit-scrollbar { height: 3px; }
+  .s3d-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,.06); border-radius: 2px; }
+
+  /* Layer item (horizontal card) */
+  .s3d-li {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 14px;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-right: 1px solid rgba(255,255,255,.03);
+  }
+
+  .s3d-li:last-child { border-right: none; }
+
+  .s3d-li:hover, :global(.s3d-li.on) { background: rgba(255,255,255,.02); }
+
+  .s3d-li-hd { display: flex; align-items: center; gap: 6px; }
+
+  .s3d-li-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    transition: box-shadow 0.3s;
+  }
+
+  :global(.s3d-li.on) .s3d-li-dot { box-shadow: 0 0 10px 2px currentColor; }
+
+  .s3d-li-num {
+    font-size: 8px; letter-spacing: 1px; font-weight: 600; opacity: 0.3;
+    font-family: var(--font-mono);
+  }
+
+  :global(.s3d-li.on) .s3d-li-num { opacity: 0.6; }
+
+  .s3d-li-tt { font-size: 12px; font-weight: 600; letter-spacing: -0.2px; white-space: nowrap; }
+
+  .s3d-li-ds { font-size: 9.5px; opacity: 0.3; margin-top: 3px; line-height: 1.4; }
+  :global(.s3d-li.on) .s3d-li-ds { opacity: 0.5; }
+
+  /* Sub-layer expand */
+  .s3d-li-sb {
+    max-height: 0; overflow: hidden; transition: max-height 0.35s ease;
+  }
+
+  :global(.s3d-li.on) .s3d-li-sb { max-height: 300px; }
+
+  .s3d-si {
+    margin: 4px 0; padding: 6px 8px; border-radius: 5px;
+    border: 1px solid rgba(255,255,255,.03);
+  }
+
+  .s3d-si-sn { font-size: 7px; letter-spacing: 1px; opacity: 0.25; font-weight: 600; font-family: var(--font-mono); }
+  .s3d-si-st { font-size: 10px; font-weight: 600; margin-top: 1px; }
+  .s3d-si-tg { display: flex; gap: 3px; margin-top: 4px; flex-wrap: wrap; }
+  .s3d-si-tg span {
+    font-size: 7px; letter-spacing: 0.5px; font-weight: 600;
+    padding: 1px 5px; border-radius: 3px;
+    font-family: var(--font-mono);
+  }
+
+  /* Color classes */
+  .c1 .s3d-li-dot { color: #4a90d9; background: #4a90d9; }
+  .c1 .s3d-li-tt { color: #7ab8f0; }
+  :global(.c1.on) { border-bottom-color: #4a90d9; }
+
+  .c2 .s3d-li-dot { color: #3cbfa0; background: #3cbfa0; }
+  .c2 .s3d-li-tt { color: #6ee0be; }
+  :global(.c2.on) { border-bottom-color: #3cbfa0; }
+
+  .c3 .s3d-li-dot { color: #8b7bd4; background: #8b7bd4; }
+  .c3 .s3d-li-tt { color: #b0a4e8; }
+  :global(.c3.on) { border-bottom-color: #8b7bd4; }
+
+  .c4 .s3d-li-dot { color: #e07a5f; background: #e07a5f; }
+  .c4 .s3d-li-tt { color: #f0a088; }
+  :global(.c4.on) { border-bottom-color: #e07a5f; }
+  .c4 .s3d-si { background: rgba(224,122,95,.03); }
+  .c4 .s3d-si-st { color: #efa08a; }
+  .c4 .s3d-si-tg span { background: rgba(224,122,95,.1); color: #e07a5f; }
+
+  .c5 .s3d-li-dot { color: #e8a838; background: #e8a838; }
+  .c5 .s3d-li-tt { color: #f0c868; }
+  :global(.c5.on) { border-bottom-color: #e8a838; }
+  .c5 .s3d-si { background: rgba(232,168,56,.03); }
+  .c5 .s3d-si-st { color: #f0c060; }
+  .c5 .s3d-si-tg span { background: rgba(232,168,56,.1); color: #e8a838; }
+
+  /* Divider & Show All */
+  .s3d-divider {
+    display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0 1rem;
+  }
+
+  .s3d-divider-line { flex: 1; height: 1px; background: var(--color-border); }
+
+  .s3d-divider-label {
+    font-family: var(--font-mono); font-size: 0.6875rem;
+    color: var(--color-text-muted); white-space: nowrap;
+  }
+
+  .s3d-show-all {
+    display: none; margin: 0 auto 1rem; padding: 0.5rem 1.5rem;
+    border-radius: 9999px; border: 1px solid var(--color-border);
+    background: var(--color-bg-card); color: var(--color-text-muted);
+    font-family: var(--font-mono); font-size: 0.75rem; cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .s3d-show-all:hover {
+    border-color: var(--color-accent); color: var(--color-accent-light);
+  }
+
+  /* Desktop 2-column: hide divider */
+  @media (min-width: 1200px) {
+    .s3d-divider { display: none; }
+    .s3d-show-all { display: none !important; }
+  }
+
+  /* Mobile */
+  @media (max-width: 860px) {
+    .s3d-canvas-wrap { height: 350px; }
+    .s3d-panel {
+      flex-direction: column;
+      overflow-y: auto;
+      max-height: 300px;
+    }
+    .s3d-li {
+      border-right: none;
+      border-bottom: none;
+      border-bottom: 1px solid rgba(255,255,255,.03);
+    }
+    .s3d-li:last-child { border-bottom: none; }
+    :global(.s3d-li.on) { border-bottom: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .s3d-li-sb { transition: none; }
+  }
+</style>

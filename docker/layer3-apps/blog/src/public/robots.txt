@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://girinman.github.io/girinman-career/sitemap-index.xml

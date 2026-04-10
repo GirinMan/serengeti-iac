@@ -1,0 +1,51 @@
+---
+interface Props {
+  name: string;
+  description?: string;
+  variant?: "badge" | "card";
+}
+
+const { name, description, variant = "badge" } = Astro.props;
+
+// Parse bullet descriptions: lines starting with "•" or "-" become list items
+const bullets = description
+  ? description.split("\n").filter((l) => l.trim().length > 0)
+  : [];
+const isBulletList = bullets.length > 1 && bullets.some((l) => /^[•\-]/.test(l.trim()));
+const bulletItems = isBulletList
+  ? bullets.map((l) => l.trim().replace(/^[•\-]\s*/, ""))
+  : [];
+---
+
+{variant === "card" && description ? (
+  <div
+    class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 transition-all duration-200 hover:border-[var(--color-accent-dark)] hover:bg-[var(--color-bg-hover)]"
+    role="listitem"
+  >
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-sm font-semibold text-[var(--color-text-primary)]">{name}</span>
+    </div>
+    {isBulletList ? (
+      <ul class="text-xs leading-relaxed text-[var(--color-text-secondary)] list-none space-y-0.5">
+        {bulletItems.map((item) => (
+          <li class="flex items-start gap-1.5">
+            <span class="text-[var(--color-accent)] opacity-60 mt-0.5 shrink-0" aria-hidden="true">•</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="text-xs leading-relaxed text-[var(--color-text-secondary)]">
+        {description}
+      </p>
+    )}
+  </div>
+) : (
+  <span
+    class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)] transition-all duration-200 hover:scale-105 hover:border-[var(--color-accent-dark)] cursor-default"
+    title={description ? `${name} — ${description}` : name}
+    role="listitem"
+  >
+    {name}
+  </span>
+)}

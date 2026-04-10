@@ -1,0 +1,228 @@
+---
+import Layout from "../Layout.astro";
+import { t, localePath } from "../../i18n";
+
+interface Props {
+  locale: "ko" | "en";
+}
+
+const { locale } = Astro.props;
+
+const experiencesKo = [
+  {
+    slug: "bhsn",
+    company: "BHSN",
+    role: "AI Engineer / NLP Engineer",
+    period: "2023.08 — 현재",
+    duration: "2023.08 — 현재",
+    current: true,
+    description: "법률 및 비즈니스 문서 AI 시스템의 전체 스택을 담당. 계약서 검토 AI(특허 등록), LLM 학습·서빙·평가 파이프라인, LangGraph 기반 워크플로우/에이전트 플랫폼 구축.",
+    highlights: [
+      "계약서 검토 AI 시스템 특허 공동 발명 (10-2867168)",
+      "자체 LLM이 GPT-4.1 SOTA 대비 +4.7% (overall 0.9138)",
+      "Agent Legal 런칭 — paid workspaces 41→227 성장 기여 (팀 성과)",
+      "predibase/lorax 오픈소스 4 PR 머지",
+    ],
+    tags: ["LLM", "Legal AI", "vLLM", "LangGraph", "FastAPI", "PyTorch"],
+  },
+  {
+    slug: "naver-cloud",
+    company: "NAVER / NAVER Cloud",
+    role: "AI Research Engineer (인턴)",
+    period: "2022.12 — 2023.02",
+    duration: "약 2개월",
+    current: false,
+    description: "Document Intelligence 팀에서 클로바노트 제목 생성 모델 개발. HyperCLOVA/LaRva 백본 + LoRA 튜닝, positive filtering SFT iteration으로 데이터 품질 개선.",
+    highlights: [
+      "Valid 개조식 오류 12건 → 1건 (-92%)",
+      "Positive data coverage 83.71% → 95.98%",
+      "인턴십 3개월 후 ClovaNote 'AI 요약 소제목' 기능 출시와 방향 일치",
+    ],
+    tags: ["NLP", "LoRA", "Weak Labeling", "HyperCLOVA", "Positive Filtering"],
+  },
+  {
+    slug: "rok-army",
+    company: "대한민국 육군",
+    role: "정보보호병 (전문특기병)",
+    period: "2020.05 — 2021.11",
+    duration: "18개월",
+    current: false,
+    description: "3군단 103정보통신단 사이버방호실 통합관제팀. 폐쇄망(air-gapped) 환경에서 보안 관제, UTM 관리, 보안 로그 분석 및 자동화 프로그램 개발.",
+    highlights: [
+      "정보보호 5기 성적우수 횃불상 수상",
+      "상등병 조기진급 (6개월 만)",
+      "분대장 임명 (4.5개월)",
+      "사이버작전사령관 표창 (2025)",
+    ],
+    tags: ["보안 관제", "폐쇄망", "자동화", "인프라"],
+  },
+];
+
+const experiencesEn = [
+  {
+    slug: "bhsn",
+    company: "BHSN",
+    role: "AI Engineer / NLP Engineer",
+    period: "2023.08 — Present",
+    duration: "2023.08 — Present",
+    current: true,
+    description: "Full-stack ownership of legal and business document AI systems. Built contract review AI (patented), LLM training/serving/evaluation pipelines, and LangGraph-based workflow/agent platform.",
+    highlights: [
+      "Co-inventor of AI contract review patent (10-2867168)",
+      "Internal LLM outperforms GPT-4.1 SOTA by +4.7% (overall 0.9138)",
+      "Agent Legal launch — paid workspaces grew 41→227 (team metric)",
+      "4 PRs merged into predibase/lorax open-source",
+    ],
+    tags: ["LLM", "Legal AI", "vLLM", "LangGraph", "FastAPI", "PyTorch"],
+  },
+  {
+    slug: "naver-cloud",
+    company: "NAVER / NAVER Cloud",
+    role: "AI Research Engineer (Intern)",
+    period: "2022.12 — 2023.02",
+    duration: "~2 months",
+    current: false,
+    description: "Developed CLOVA Note title generation model in the Document Intelligence team. HyperCLOVA/LaRva backbone + LoRA tuning with positive filtering SFT iteration for data quality improvement.",
+    highlights: [
+      "Valid bullet-point errors 12 → 1 (-92%)",
+      "Positive data coverage 83.71% → 95.98%",
+      "Direction aligned with ClovaNote 'AI Summary Subtitles' feature launched 3 months after internship",
+    ],
+    tags: ["NLP", "LoRA", "Weak Labeling", "HyperCLOVA", "Positive Filtering"],
+  },
+  {
+    slug: "rok-army",
+    company: "Republic of Korea Army",
+    role: "InfoSec Specialist (Specialist Conscript)",
+    period: "2020.05 — 2021.11",
+    duration: "18 months",
+    current: false,
+    description: "Integrated Security Operations Team in the Cyber Defense Division of the III Corps 103rd Signal Brigade. Security monitoring, UTM management, log analysis, and automation development in air-gapped environments.",
+    highlights: [
+      "InfoSec Class 5 Top Performer Award (Torch Award)",
+      "Early promotion to Corporal (6 months)",
+      "Squad leader appointment (4.5 months)",
+      "Cyber Operations Command Commendation (2025)",
+    ],
+    tags: ["Security Ops", "Air-gapped", "Automation", "Infrastructure"],
+  },
+];
+
+const experiences = locale === "ko" ? experiencesKo : experiencesEn;
+const layoutDescription = locale === "ko"
+  ? "사이버 보안에서 NLP 연구, 프로덕션 LLM 시스템까지의 커리어 여정."
+  : "My professional journey — from cybersecurity to NLP research and production LLM systems.";
+
+const eduDegree = locale === "ko" ? "컴퓨터소프트웨어학부 공학사" : "B.E. in Computer Software";
+const eduSchool = locale === "ko" ? "한양대학교" : "Hanyang University";
+const eduDetail = locale === "ko"
+  ? "GPA: 4.14 / 4.50 | 우수 졸업 (Summa Cum Laude) | 조기 졸업 (1학기) | 전액 장학금 (4학기)"
+  : "GPA: 4.14 / 4.50 | Summa Cum Laude | Early Graduation (1 semester) | Full Scholarship (4 semesters)";
+---
+
+<Layout title={t(locale, "career.title")} description={layoutDescription} locale={locale}>
+  <section class="mx-auto max-w-5xl px-6 py-16">
+    <h1 class="text-3xl font-bold text-[var(--color-text-primary)]" style="font-family: var(--font-display);">
+      {t(locale, "career.heading")}
+    </h1>
+    <p class="mt-3 text-base text-[var(--color-text-secondary)] max-w-2xl">
+      {t(locale, "career.desc")}
+    </p>
+
+    <!-- Interactive Timeline -->
+    <div class="mt-12 space-y-0">
+      {experiences.map((exp, i) => (
+        <a
+          href={localePath(locale, `/career/${exp.slug}`)}
+          class="group block relative pl-10 pb-10 last:pb-0 no-underline"
+        >
+          {/* Vertical line */}
+          {i < experiences.length - 1 && (
+            <div class="absolute left-[11px] top-6 bottom-0 w-px bg-[var(--color-border)] group-hover:bg-[var(--color-accent)]/30 transition-colors duration-300"></div>
+          )}
+
+          {/* Dot */}
+          <div class:list={[
+            "absolute left-0 top-[22px] h-[23px] w-[23px] rounded-full border-2 transition-all duration-300",
+            exp.current
+              ? "border-[var(--color-accent)] bg-[var(--color-accent)]/20 group-hover:bg-[var(--color-accent)]/40"
+              : "border-[var(--color-border)] bg-[var(--color-bg-secondary)] group-hover:border-[var(--color-accent)]",
+          ]}>
+            {exp.current && (
+              <span class="absolute inset-0 rounded-full border-2 border-[var(--color-accent)] animate-ping opacity-30" aria-hidden="true"></span>
+            )}
+          </div>
+
+          {/* Card */}
+          <div class="card-glow rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6 transition-all duration-300 group-hover:border-[var(--color-accent)]/40 group-hover:shadow-lg group-hover:shadow-[var(--color-accent-glow)]">
+            {/* Header */}
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+              <div>
+                <p class="text-xs font-medium tracking-wider uppercase text-[var(--color-text-muted)] font-mono">
+                  {exp.period}
+                  {exp.current && (
+                    <span class="ml-2 inline-flex items-center rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-[10px] font-semibold text-[var(--color-accent-light)]">
+                      CURRENT
+                    </span>
+                  )}
+                </p>
+                <h2 class="mt-1.5 text-lg font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent-light)] transition-colors" style="font-family: var(--font-display);">
+                  {exp.role}
+                </h2>
+                <p class="text-sm text-[var(--color-accent-light)]">{exp.company}</p>
+              </div>
+              <span class="text-xs text-[var(--color-text-muted)] font-mono shrink-0">{exp.duration}</span>
+            </div>
+
+            {/* Description */}
+            <p class="mt-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+              {exp.description}
+            </p>
+
+            {/* Highlights */}
+            <ul class="mt-4 space-y-1.5">
+              {exp.highlights.map((h) => (
+                <li class="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+                  <span class="text-[var(--color-accent)] mt-0.5 shrink-0" aria-hidden="true">+</span>
+                  <span>{h}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* Tags */}
+            <div class="mt-4 flex flex-wrap gap-1.5">
+              {exp.tags.map((tag) => (
+                <span class="tag-pill rounded-full px-2.5 py-0.5 text-xs font-mono">
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            {/* View detail CTA */}
+            <div class="mt-4 flex items-center gap-1 text-xs font-medium text-[var(--color-accent)] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <span>{t(locale, "career.viewDetail")}</span>
+              <svg class="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </a>
+      ))}
+    </div>
+
+    {/* Education */}
+    <div class="mt-16">
+      <h2 class="text-xl font-semibold text-[var(--color-text-primary)] mb-6" style="font-family: var(--font-display);">
+        {t(locale, "about.education")}
+      </h2>
+      <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
+        <p class="text-xs font-medium tracking-wider uppercase text-[var(--color-text-muted)] font-mono">2018 — 2023</p>
+        <h3 class="mt-1.5 text-base font-semibold text-[var(--color-text-primary)]">{eduDegree}</h3>
+        <p class="text-sm text-[var(--color-accent-light)]">{eduSchool}</p>
+        <p class="mt-2 text-sm text-[var(--color-text-secondary)]">
+          {eduDetail}
+        </p>
+      </div>
+    </div>
+  </section>
+</Layout>
