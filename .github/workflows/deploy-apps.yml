@@ -1,9 +1,11 @@
 name: Deploy Apps
 
-# Deploys layer-3 apps to the homelab host by SSHing in and running `make <app>`.
+# Deploys layer-3 apps to the homelab host.
+# Runs on a self-hosted runner that lives on the same host as the
+# compose stack, so deployment is a local `make <app>`—no SSH needed.
 # Triggered by:
-#   - repository_dispatch from the app source repos (girinman-career, GIS-underground-facilities)
-#     after they successfully build+push an image to Harbor.
+#   - repository_dispatch from the app source repos after a successful
+#     image build+push to Harbor.
 #   - workflow_dispatch (manual), choosing which app to deploy.
 
 on:
@@ -26,7 +28,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, homelab]
     concurrency:
       group: deploy-${{ github.event.client_payload.app || github.event.inputs.app || github.event.action }}
       cancel-in-progress: false
@@ -50,41 +52,34 @@ jobs:
           echo "tag=$TAG"   >> "$GITHUB_OUTPUT"
           echo "Deploying app=$APP tag=$TAG"
 
-      - name: SSH deploy
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_SSH_PORT }}
-          envs: APP,TAG
-          script_stop: true
-          script: |
-            set -euo pipefail
-            cd "$HOME/serengeti-iac"
-            git fetch --quiet origin main
-            git reset --quiet --hard origin/main
-
-            # Pin the image tag in .env if a tag was provided.
-            if [ -n "${TAG:-}" ]; then
-              case "$APP" in
-                blog)
-                  sed -i "s|^BLOG_IMAGE_TAG=.*|BLOG_IMAGE_TAG=${TAG}|" .env
-                  ;;
-                gis)
-                  sed -i "s|^GIS_API_IMAGE_TAG=.*|GIS_API_IMAGE_TAG=${TAG}|" .env
-                  sed -i "s|^GIS_WEB_IMAGE_TAG=.*|GIS_WEB_IMAGE_TAG=${TAG}|" .env
-                  sed -i "s|^GIS_WORKER_IMAGE_TAG=.*|GIS_WORKER_IMAGE_TAG=${TAG}|" .env
-                  ;;
-              esac
-            fi
-
-            case "$APP" in
-              blog) make blog ;;
-              gis)  make gis ;;
-              apps) make apps ;;
-              *) echo "unknown app: $APP"; exit 1 ;;
-            esac
+      - name: Deploy on homelab host
         env:
           APP: ${{ steps.resolve.outputs.app }}
           TAG: ${{ steps.resolve.outputs.tag }}
+          IAC_ROOT: /home/girinman/workspace/serengeti-iac
+        run: |
+          set -euo pipefail
+          cd "$IAC_ROOT"
+
+          git fetch --quiet origin main
+          git reset --quiet --hard origin/main
+
+          if [ -n "${TAG:-}" ]; then
+            case "$APP" in
+              blog)
+                sed -i "s|^BLOG_IMAGE_TAG=.*|BLOG_IMAGE_TAG=${TAG}|" .env
+                ;;
+              gis)
+                sed -i "s|^GIS_API_IMAGE_TAG=.*|GIS_API_IMAGE_TAG=${TAG}|" .env
+                sed -i "s|^GIS_WEB_IMAGE_TAG=.*|GIS_WEB_IMAGE_TAG=${TAG}|" .env
+                sed -i "s|^GIS_WORKER_IMAGE_TAG=.*|GIS_WORKER_IMAGE_TAG=${TAG}|" .env
+                ;;
+            esac
+          fi
+
+          case "$APP" in
+            blog) make blog ;;
+            gis)  make gis ;;
+            apps) make apps ;;
+            *) echo "unknown app: $APP"; exit 1 ;;
+          esac
