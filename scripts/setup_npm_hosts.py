@@ -134,7 +134,9 @@ PROXY_HOSTS = [
         "advanced_config": (
             "client_max_body_size 0;\n"
             "proxy_read_timeout 900s;\n"
-            "proxy_send_timeout 900s;"
+            "proxy_send_timeout 900s;\n"
+            "proxy_set_header X-Forwarded-Proto https;\n"
+            "proxy_set_header X-Forwarded-Ssl on;"
         ),
     },
 ]
