@@ -100,7 +100,7 @@ dirs:
 	@echo "==> 로컬 bind mount 디렉토리 생성"
 	mkdir -p docker/layer1-ops/npm/data
 	mkdir -p docker/layer1-ops/npm/letsencrypt
-	mkdir -p docker/layer1-ops/harbor/data/{registry,database,redis,log,job_logs,ca_download,psc,secret,trivy-adapter/trivy,trivy-adapter/reports}
+	@# Harbor data/** is materialized by Harbor's `prepare` step (see docker/layer1-ops/harbor/README.md) with the container UIDs it expects. Do not pre-create here.
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/rabbitmq
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/api
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/worker
