@@ -121,6 +121,22 @@ PROXY_HOSTS = [
         "allow_websocket_upgrade": True,
         "advanced_config": "",
     },
+    {
+        "name": "Harbor Registry",
+        "domain_names": [_require("CF_HARBOR_HOST")],
+        "forward_host": "harbor-nginx",
+        "forward_port": 8080,
+        "caching_enabled": False,
+        # block_exploits off: Harbor's /api/v2.0 and docker registry endpoints
+        # trip NPM's exploit rules (e.g. path segments with dots).
+        "block_exploits": False,
+        "allow_websocket_upgrade": True,
+        "advanced_config": (
+            "client_max_body_size 0;\n"
+            "proxy_read_timeout 900s;\n"
+            "proxy_send_timeout 900s;"
+        ),
+    },
 ]
 
 # ---------------------------------------------------------------------------
