@@ -1,9 +1,6 @@
 services:
   astro-blog:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: astro-blog:1.0.0
+    image: ${CF_HARBOR_HOST:?CF_HARBOR_HOST must be set}/girinman/astro-blog:${BLOG_IMAGE_TAG:?BLOG_IMAGE_TAG must be set (use git sha from github.com/GirinMan/girinman-career)}
     container_name: astro-blog
     restart: unless-stopped
     networks:

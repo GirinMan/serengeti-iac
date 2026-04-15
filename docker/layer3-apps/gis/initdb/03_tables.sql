@@ -139,3 +139,28 @@ CREATE TABLE IF NOT EXISTS auth.users (
     is_active   BOOLEAN DEFAULT true,
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ============================================================
+-- 시설물 type_code 역정규화 컬럼 및 Partial GiST 인덱스
+-- (type_code: facility_types.code를 비정규화하여 부분 인덱스 활용)
+-- ============================================================
+ALTER TABLE gis.facilities ADD COLUMN IF NOT EXISTS type_code VARCHAR(20);
+
+-- type_code 조회용 B-tree 인덱스
+CREATE INDEX IF NOT EXISTS idx_facilities_type_code ON gis.facilities (type_code);
+
+-- 시설물 유형별 Partial GiST Index: 자주 쓰이는 관로/맨홀 그룹별 분리
+CREATE INDEX IF NOT EXISTS idx_facilities_geom_pipe
+    ON gis.facilities USING GIST(geom)
+    WHERE type_code LIKE PIPE_%;
+
+CREATE INDEX IF NOT EXISTS idx_facilities_geom_manhole
+    ON gis.facilities USING GIST(geom)
+    WHERE type_code LIKE MANHOLE_%;
+
+CREATE INDEX IF NOT EXISTS idx_facilities_geom_other
+    ON gis.facilities USING GIST(geom)
+    WHERE type_code NOT LIKE PIPE_% AND type_code NOT LIKE MANHOLE_%;
+
+-- region_id + type_id 복합 B-tree: bbox 쿼리 전 행 필터링 최적화
+CREATE INDEX IF NOT EXISTS idx_facilities_region_type ON gis.facilities (region_id, type_id);

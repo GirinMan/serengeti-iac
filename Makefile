@@ -5,7 +5,7 @@ COMPOSE = docker compose --env-file .env
 PRIMARY_STORAGE_ROOT ?= /mnt/primary
 ARCHIVE_STORAGE_ROOT ?= /mnt/archive
 
-.PHONY: help check-env validate preflight storage-map runtime-snapshot system storage ssh ufw cloudflared network dirs ops npm harbor data apps gis gis-init gis-migrate gis-status gis-e2e backup bootstrap app status logs docs-host clean
+.PHONY: help check-env validate preflight storage-map runtime-snapshot system storage ssh ufw cloudflared network dirs ops npm harbor harbor-login data apps blog gis gis-init gis-migrate gis-status backup bootstrap app status logs docs-host clean
 
 help:
 	@echo "===== Serengeti Homelab IaC ====="
@@ -29,9 +29,10 @@ help:
 	@echo "make bootstrap   - Layer 1~3 전체 스택 순차 실행"
 	@echo "make gis-init    - GIS DB 생성 + 스키마 적용"
 	@echo "make gis-migrate - 레거시 Shapefile → PostGIS 마이그레이션"
-	@echo "make gis         - Layer 3 GIS 서비스 실행"
+	@echo "make gis         - Layer 3 GIS 서비스 실행 (Harbor pull)"
+	@echo "make blog        - Layer 3 Blog 실행 (Harbor pull)"
 	@echo "make gis-status  - GIS 서비스 상태 점검"
-	@echo "make gis-e2e     - GIS E2E 테스트 실행 (override 자동 생성)"
+	@echo "make harbor-login - Harbor registry 로그인 (push/pull 전 필요)"
 	@echo "make app name=<blog|nextcloud|plane|gis> - 개별 앱 재배포"
 	@echo "make docs-host   - 현재 호스트 상태 수집 문서 생성"
 	@echo "make status      - 전체 상태 확인"
@@ -62,7 +63,6 @@ validate: check-env
 	bash -n scripts/runtime_snapshot.sh
 	bash -n docker/layer3-apps/gis/init-gisdb.sh
 	bash -n docker/layer3-apps/gis/migrate-legacy.sh
-	bash -n docker/layer3-apps/gis/migration/10_setup_elasticsearch.sh
 	bash -n docker/layer3-apps/gis/gis-status.sh
 	@if command -v docker >/dev/null 2>&1; then \
 		echo "==> Docker Compose 설정 확인"; \
@@ -100,7 +100,7 @@ dirs:
 	@echo "==> 로컬 bind mount 디렉토리 생성"
 	mkdir -p docker/layer1-ops/npm/data
 	mkdir -p docker/layer1-ops/npm/letsencrypt
-	@# Harbor data/** is materialized by Harbor's `prepare` step (see docker/layer1-ops/harbor/README.md) with the container UIDs it expects. Do not pre-create here.
+	@# Harbor data/** dirs are created by docker/layer1-ops/harbor/README.md bootstrap (prepare step sets correct container UIDs). Do not pre-create here.
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/rabbitmq
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/api
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/worker
@@ -166,13 +166,26 @@ data: check-env network
 	$(COMPOSE) -f docker/layer2-data/minio/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer2-data/rabbitmq/docker-compose.yml up -d
 
-apps: check-env network dirs
+harbor-login: check-env
+	@if [ -z "$(HARBOR_CLI_USER)" ] || [ -z "$(HARBOR_CLI_PASSWORD)" ] || [ -z "$(CF_HARBOR_HOST)" ]; then \
+		echo "HARBOR_CLI_USER / HARBOR_CLI_PASSWORD / CF_HARBOR_HOST 가 .env 에 설정되어 있어야 합니다."; \
+		exit 1; \
+	fi
+	@echo "$(HARBOR_CLI_PASSWORD)" | docker login "$(CF_HARBOR_HOST)" -u "$(HARBOR_CLI_USER)" --password-stdin
+
+apps: check-env network dirs harbor-login
 	@echo "==> [Layer 3] 애플리케이션 실행"
+	$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml pull
 	$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d
 	docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='$(PLANE_DB_NAME)'" | grep -q 1 || \
 		docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -c "CREATE DATABASE $(PLANE_DB_NAME);"
 	$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml up -d
 	$(COMPOSE) -f docker/layer3-apps/plane/docker-compose.yml up -d
+
+blog: check-env network harbor-login
+	@echo "==> [Layer 3] Blog 서비스 실행 (Harbor pull)"
+	$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml pull
+	$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d
 
 gis-init: check-env
 	@echo "==> [Layer 3] GIS DB 초기화"
@@ -182,21 +195,14 @@ gis-migrate: check-env gis-init
 	@echo "==> [Layer 3] 레거시 데이터 마이그레이션"
 	bash docker/layer3-apps/gis/migrate-legacy.sh
 
-gis: check-env network gis-init
-	@echo "==> [Layer 3] GIS 서비스 실행"
-	$(COMPOSE) -f docker/layer3-apps/gis/docker-compose.yml up -d --build
+gis: check-env network harbor-login gis-init
+	@echo "==> [Layer 3] GIS 서비스 실행 (Harbor pull)"
+	$(COMPOSE) -f docker/layer3-apps/gis/docker-compose.yml pull
+	$(COMPOSE) -f docker/layer3-apps/gis/docker-compose.yml up -d
 
 gis-status:
 	@echo "==> [Layer 3] GIS 서비스 상태 점검"
 	bash docker/layer3-apps/gis/gis-status.sh
-
-GIS_DIR = docker/layer3-apps/gis
-GIS_OVERRIDE = $(GIS_DIR)/docker-compose.override.yml
-gis-e2e:
-	@echo "==> [Layer 3] GIS E2E 테스트 실행"
-	@test -f $(GIS_OVERRIDE) || printf '# Auto-generated for E2E tests (in .gitignore)\nservices:\n  gis-web:\n    ports:\n      - "18080:80"\n' > $(GIS_OVERRIDE)
-	$(COMPOSE) -f $(GIS_DIR)/docker-compose.yml -f $(GIS_OVERRIDE) up -d gis-web
-	cd $(GIS_DIR)/gis-web && npx playwright test $(ARGS)
 
 backup: check-env network
 	@echo "==> [Layer 3] 백업 파이프라인 실행"
@@ -211,6 +217,7 @@ app: check-env
 		exit 1; \
 	fi
 	@if [ "$(name)" = "blog" ]; then \
+		$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml pull; \
 		$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d --force-recreate; \
 	elif [ "$(name)" = "nextcloud" ]; then \
 		$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml up -d --force-recreate; \
@@ -220,7 +227,8 @@ app: check-env
 		$(COMPOSE) -f docker/layer3-apps/plane/docker-compose.yml up -d --force-recreate; \
 	elif [ "$(name)" = "gis" ]; then \
 		bash docker/layer3-apps/gis/init-gisdb.sh; \
-		$(COMPOSE) -f docker/layer3-apps/gis/docker-compose.yml up -d --build --force-recreate; \
+		$(COMPOSE) -f docker/layer3-apps/gis/docker-compose.yml pull; \
+		$(COMPOSE) -f docker/layer3-apps/gis/docker-compose.yml up -d --force-recreate; \
 	else \
 		echo "지원하지 않는 앱입니다: $(name)"; \
 		exit 1; \
