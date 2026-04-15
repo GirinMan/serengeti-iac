@@ -11,7 +11,13 @@
    - 해결안 (사람 입력 필요):
      - (A) **GitHub Actions self-hosted runner** 를 homelab 호스트에 등록. `gis-worker` job 만 `runs-on: [self-hosted, linux, x64]` 로 옮기고 push 는 `localhost:8088` (또는 `127.0.0.1` hosts override) 사용. GH PAT/registration token 필요.
      - (B) Base image digest pinning (`FROM postgis/postgis@sha256:<digest>`) + buildx provenance 끄기로 reproducibility 확보 후 priming. 실험적이고, apk mirror 갱신으로 여전히 digest 가 틀어질 수 있음.
-   - 추천: (A). PAT 발급 후 다음 라운드에서 runner 등록 스크립트 만들어 `system/` 아래에 둘 예정.
+   - 추천: (A). 등록 스크립트는 `system/gha_runner_install.sh` 에 이미 준비해 둠. 사람이 할 일: GitHub `GirinMan/GIS-underground-facilities` 저장소 Settings → Actions → Runners → "New self-hosted runner" 에서 **registration token** 복사 후 아래 실행:
+     ```bash
+     export GHA_REPO=GirinMan/GIS-underground-facilities
+     export GHA_REG_TOKEN=<paste token>
+     bash system/gha_runner_install.sh
+     ```
+     이후 `.github/workflows/build-gis.yml` 의 `gis-worker` job 의 `runs-on` 을 `[self-hosted, linux, x64, homelab]` 로 바꾸는 PR 을 다음 라운드에서 낼 예정.
 
 2. Cloudflare Tunnel 등록
    - 필요 값:
