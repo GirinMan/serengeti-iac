@@ -4,6 +4,15 @@
 
 ## Human Input Still Needed
 
+1. **gis-worker CI 413 (Cloudflare 100MB cap) — Self-hosted runner 필요** *(2026-04-15 기록)*
+   - 증상: `build-gis.yml`의 `gis-worker` job에서 `docker push harbor.giraffe.ai.kr/girinman/gis-worker:<sha>` 실행 시 postgis/postgis:16-3.4-alpine 기반 runtime 레이어가 ~269MB라 CF free-tier의 request body 100MB 제한에 걸려 `413 Payload Too Large` 발생. gis-api·gis-web·blog 은 multi-stage + layer split 으로 모두 100MB 미만으로 만들어 성공.
+   - 임시 조치: 현재 commit `732eb80` 이미지는 homelab 호스트에서 `localhost:8088`(CF 우회)로 직접 `docker buildx build --push` 수행하여 Harbor 에 적재 완료. 배포(`make gis`)는 가능.
+   - 왜 priming 만으로 안 되는가: CI 빌드가 재현 가능한 동일 digest 를 만들지 않는다. Base tag `postgis:16-3.4-alpine` 이 moving tag 여서 pull 시점마다 resolved digest 가 달라질 수 있고, buildx 의 provenance/attestation 설정 차이로 export 결과가 달라짐. 따라서 내가 push 한 269MB blob digest 와 CI 가 만든 digest 가 매칭되지 않아 HEAD-check skip 이 동작 안 함.
+   - 해결안 (사람 입력 필요):
+     - (A) **GitHub Actions self-hosted runner** 를 homelab 호스트에 등록. `gis-worker` job 만 `runs-on: [self-hosted, linux, x64]` 로 옮기고 push 는 `localhost:8088` (또는 `127.0.0.1` hosts override) 사용. GH PAT/registration token 필요.
+     - (B) Base image digest pinning (`FROM postgis/postgis@sha256:<digest>`) + buildx provenance 끄기로 reproducibility 확보 후 priming. 실험적이고, apk mirror 갱신으로 여전히 digest 가 틀어질 수 있음.
+   - 추천: (A). PAT 발급 후 다음 라운드에서 runner 등록 스크립트 만들어 `system/` 아래에 둘 예정.
+
 2. Cloudflare Tunnel 등록
    - 필요 값:
      - 실제 `CF_TUNNEL_TOKEN`
