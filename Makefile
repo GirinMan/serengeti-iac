@@ -167,11 +167,14 @@ data: check-env network
 	$(COMPOSE) -f docker/layer2-data/rabbitmq/docker-compose.yml up -d
 
 harbor-login: check-env
-	@if [ -z "$(HARBOR_CLI_USER)" ] || [ -z "$(HARBOR_CLI_PASSWORD)" ] || [ -z "$(CF_HARBOR_HOST)" ]; then \
+	@HARBOR_CLI_USER=$$(grep -E '^HARBOR_CLI_USER=' ./.env | cut -d= -f2-); \
+	HARBOR_CLI_PASSWORD=$$(grep -E '^HARBOR_CLI_PASSWORD=' ./.env | cut -d= -f2-); \
+	CF_HARBOR_HOST=$$(grep -E '^CF_HARBOR_HOST=' ./.env | cut -d= -f2-); \
+	if [ -z "$$HARBOR_CLI_USER" ] || [ -z "$$HARBOR_CLI_PASSWORD" ] || [ -z "$$CF_HARBOR_HOST" ]; then \
 		echo "HARBOR_CLI_USER / HARBOR_CLI_PASSWORD / CF_HARBOR_HOST 가 .env 에 설정되어 있어야 합니다."; \
 		exit 1; \
-	fi
-	@echo "$(HARBOR_CLI_PASSWORD)" | docker login "$(CF_HARBOR_HOST)" -u "$(HARBOR_CLI_USER)" --password-stdin
+	fi; \
+	echo "$$HARBOR_CLI_PASSWORD" | docker login "$$CF_HARBOR_HOST" -u "$$HARBOR_CLI_USER" --password-stdin
 
 apps: check-env network dirs harbor-login
 	@echo "==> [Layer 3] 애플리케이션 실행"
