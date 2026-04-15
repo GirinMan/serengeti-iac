@@ -1,0 +1,71 @@
+# Harbor 2.11 LTS configuration template.
+# Processed by `install.sh` (which runs `goharbor/prepare`) to render
+# ./common/config/*. Do NOT commit the rendered common/config/ tree.
+#
+# NPM terminates TLS externally; Harbor runs HTTP-only, bound to loopback.
+
+hostname: ${HARBOR_HOSTNAME}
+
+http:
+  port: 8080
+
+# HTTPS is intentionally DISABLED — NPM handles TLS at the edge.
+# (Comment the `https:` block out entirely when copying this file.)
+
+# External URL as seen by clients (through NPM + Cloudflare).
+external_url: https://${HARBOR_HOSTNAME}
+
+harbor_admin_password: ${HARBOR_ADMIN_PASSWORD}
+
+database:
+  password: ${HARBOR_DB_PASSWORD}
+  max_idle_conns: 50
+  max_open_conns: 100
+
+data_volume: ./data
+
+trivy:
+  ignore_unfixed: false
+  skip_update: false
+  offline_scan: false
+  security_check: vuln
+  insecure: false
+
+jobservice:
+  max_job_workers: 5
+  job_loggers:
+    - STD_OUTPUT
+    - FILE
+  logger_sweeper_duration: 1
+
+notification:
+  webhook_job_max_retry: 3
+  webhook_job_http_client_timeout: 3
+
+log:
+  level: info
+  local:
+    rotate_count: 50
+    rotate_size: 200M
+    location: ./data/log
+
+_version: 2.11.0
+
+proxy:
+  http_proxy:
+  https_proxy:
+  no_proxy:
+  components:
+    - core
+    - jobservice
+    - trivy
+
+upload_purging:
+  enabled: true
+  age: 168h
+  interval: 24h
+  dryrun: false
+
+cache:
+  enabled: false
+  expire_hours: 24

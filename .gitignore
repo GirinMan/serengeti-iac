@@ -211,6 +211,9 @@ system/authorized_keys
 docs/raw/
 docker/layer1-ops/npm/data/
 docker/layer1-ops/npm/letsencrypt/
+docker/layer1-ops/harbor/data/
+docker/layer1-ops/harbor/common/
+docker/layer1-ops/harbor/harbor.yml.local
 docker/layer2-data/*/data/
 docker/layer2-data/*/logs/
 docker/layer3-apps/blog/content/

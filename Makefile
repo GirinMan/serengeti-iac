@@ -5,7 +5,7 @@ COMPOSE = docker compose --env-file .env
 PRIMARY_STORAGE_ROOT ?= /mnt/primary
 ARCHIVE_STORAGE_ROOT ?= /mnt/archive
 
-.PHONY: help check-env validate preflight storage-map runtime-snapshot system storage ssh ufw cloudflared network dirs ops data apps gis gis-init gis-migrate gis-status gis-e2e backup bootstrap app status logs docs-host clean
+.PHONY: help check-env validate preflight storage-map runtime-snapshot system storage ssh ufw cloudflared network dirs ops npm harbor data apps gis gis-init gis-migrate gis-status gis-e2e backup bootstrap app status logs docs-host clean
 
 help:
 	@echo "===== Serengeti Homelab IaC ====="
@@ -20,7 +20,9 @@ help:
 	@echo "make runtime-snapshot - 현재 런타임 상태를 raw 로그로 저장"
 	@echo "make network     - Docker 네트워크 생성"
 	@echo "make dirs        - 로컬 bind mount 디렉토리 생성"
-	@echo "make ops         - Layer 1 서비스 실행"
+	@echo "make ops         - Layer 1 서비스 실행 (npm + harbor)"
+	@echo "make npm         - Layer 1 Nginx Proxy Manager 실행"
+	@echo "make harbor      - Layer 1 Harbor registry 실행"
 	@echo "make data        - Layer 2 데이터 플랫폼 실행"
 	@echo "make apps        - Layer 3 애플리케이션 실행"
 	@echo "make backup      - 백업 파이프라인 실행"
@@ -65,6 +67,7 @@ validate: check-env
 	@if command -v docker >/dev/null 2>&1; then \
 		echo "==> Docker Compose 설정 확인"; \
 		$(COMPOSE) -f docker/layer1-ops/npm/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer1-ops/harbor/docker-compose.yml config >/dev/null || echo "(harbor compose 검증 실패: prepare 이후에만 성공)"; \
 		$(COMPOSE) -f docker/layer2-data/postgres/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/neo4j/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/elasticsearch/docker-compose.yml config >/dev/null; \
@@ -97,6 +100,7 @@ dirs:
 	@echo "==> 로컬 bind mount 디렉토리 생성"
 	mkdir -p docker/layer1-ops/npm/data
 	mkdir -p docker/layer1-ops/npm/letsencrypt
+	mkdir -p docker/layer1-ops/harbor/data/{registry,database,redis,log,job_logs,ca_download,psc,secret,trivy-adapter/trivy,trivy-adapter/reports}
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/rabbitmq
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/api
 	mkdir -p $(PRIMARY_STORAGE_ROOT)/plane/logs/worker
@@ -137,9 +141,20 @@ network:
 	@echo "==> Docker 네트워크 생성"
 	bash docker/networks.sh
 
-ops: check-env network dirs
+ops: check-env network dirs npm harbor
+	@echo "==> [Layer 1] ops 스택 기동 완료"
+
+npm: check-env network dirs
 	@echo "==> [Layer 1] Nginx Proxy Manager 실행"
 	$(COMPOSE) -f docker/layer1-ops/npm/docker-compose.yml up -d
+
+harbor: check-env network dirs
+	@echo "==> [Layer 1] Harbor registry 실행"
+	@if [ ! -d docker/layer1-ops/harbor/common/config ]; then \
+		echo "Harbor common/config 가 없습니다. README의 bootstrap 순서대로 prepare 를 먼저 실행하세요."; \
+		exit 1; \
+	fi
+	$(COMPOSE) -f docker/layer1-ops/harbor/docker-compose.yml up -d
 
 data: check-env network
 	@echo "==> [Layer 2] 데이터 플랫폼 실행"
@@ -246,4 +261,5 @@ clean:
 	-$(COMPOSE) -f docker/layer2-data/elasticsearch/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/neo4j/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/postgres/docker-compose.yml down --remove-orphans
+	-$(COMPOSE) -f docker/layer1-ops/harbor/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer1-ops/npm/docker-compose.yml down --remove-orphans
