@@ -61,6 +61,10 @@ jobs:
           set -euo pipefail
           cd "$IAC_ROOT"
 
+          # Repo is owned by the `girinman` user; runner executes as
+          # `gha-runner-iac`. Register safe.directory so git allows it.
+          git config --global --add safe.directory "$IAC_ROOT"
+
           git fetch --quiet origin main
           git reset --quiet --hard origin/main
 
