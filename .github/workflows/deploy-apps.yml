@@ -65,8 +65,11 @@ jobs:
           # `gha-runner-iac`. Register safe.directory so git allows it.
           git config --global --add safe.directory "$IAC_ROOT"
 
-          git fetch --quiet origin main
-          git reset --quiet --hard origin/main
+          # Fetch via HTTPS (unauthenticated public read) instead of
+          # whatever protocol the local remote is configured with —
+          # runner user has no SSH key and no gh auth.
+          git fetch --quiet https://github.com/${{ github.repository }}.git main
+          git reset --quiet --hard FETCH_HEAD
 
           if [ -n "${TAG:-}" ]; then
             case "$APP" in
