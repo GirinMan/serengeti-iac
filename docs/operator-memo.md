@@ -14,19 +14,16 @@
    - `deploy-apps.yml` 이 `runs-on: [self-hosted, linux, x64, homelab]` 로 전환, `git fetch https://.../main` + `git reset --hard FETCH_HEAD` + `make <app>` 흐름으로 SSH 우회.
    - 최근 실행에서 `gis` 파이프라인 `repository_dispatch` 수신 → 이미지 태그 `.env` 에 반영 → `make gis` 재기동까지 green 확인됨 (`.env` 의 `GIS_*_IMAGE_TAG=bb5757f...` 가 그 결과).
 
-3. Cloudflare Tunnel 등록
-   - 필요 값:
-     - 실제 `CF_TUNNEL_TOKEN`
-     - 실제 공인 도메인과 Cloudflare DNS 위임 상태
-   - 이 값이 들어오기 전까지는 패키지 설치, NPM upstream, 내부 앱 기동까지만 진행한다.
-
-3. 공인 도메인 라우팅 연결
-   - NPM upstream 대상은 정리 가능하지만 실제 외부 라우팅 검증은 도메인 연결 후 마무리해야 한다.
-   - 예정 호스트:
-     - `${CF_BLOG_HOST}` -> `astro-blog:80` (정적 사이트)
-     - `${CF_PLANE_HOST}` -> `plane-proxy:80`
-     - `${CF_NAS_HOST}` -> `nextcloud:80`
-     - `${CF_S3_HOST}` -> `minio:${MINIO_CONSOLE_PORT}`
+3. ~~Cloudflare Tunnel 등록 / 공인 도메인 라우팅~~ *(해결 2026-04-16 확인)*
+   - `.env` 에 실제 `CF_TUNNEL_TOKEN`, `CF_DOMAIN=giraffe.ai.kr` 설정 완료.
+   - 공개 호스트 상태 (2026-04-16 HTTPS probe):
+     - `blog.giraffe.ai.kr` → `astro-blog:80`        200
+     - `nas.giraffe.ai.kr` → `nextcloud:80`          200
+     - `todo.giraffe.ai.kr` → `plane-proxy:80`       200
+     - `minio.giraffe.ai.kr` → `minio:9001` (콘솔)    200
+     - `s3.giraffe.ai.kr` → `minio:9000` (API)        403 (정상 — 인증 없이 list 금지)
+     - `harbor.giraffe.ai.kr` → `harbor-nginx:8080`  200
+     - `gis.giraffe.ai.kr` → `gis-web:80`             200
 
 ## Runtime Notes
 
@@ -73,12 +70,10 @@
 ## Safe Next Steps Without Human Input
 
 - ~~Plane 이미지 pull을 끝내고 compose 전체를 재기동한다.~~ ✓ 완료
+- ~~WordPress → Astro 마이그레이션~~ ✓ 완료 (girinman-career 리포 이관 + Harbor 이미지 기반 배포)
 - `make runtime-snapshot` 으로 중간 상태 raw 로그를 계속 남긴다.
 - post-install runbook, host audit, progress log를 현재 상태에 맞게 계속 갱신한다.
-- WordPress → Astro 마이그레이션 진행 중:
-  - WordPress, MariaDB 컨테이너 중단 완료
-  - Astro 소스 디렉토리 초기화 필요 (사람이 직접 또는 추후 자동화)
-  - 배포 디렉토리 생성 필요: `sudo mkdir -p /mnt/archive/astro-blog/dist && sudo chown -R $USER:$USER /mnt/archive/astro-blog`
+- 블로그 end-to-end 체인 (girinman-career push → build-blog.yml → Harbor → notify-iac → deploy-apps.yml → `make blog`) 실제 동작은 girinman-career 쪽에서 push 가 발생할 때 자연 검증된다 (인프라 측 구성은 이미 완비).
 
 ## Protected Data
 
