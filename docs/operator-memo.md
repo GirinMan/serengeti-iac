@@ -9,27 +9,10 @@
    - `build-gis.yml` 의 `gis-worker` job 은 `runs-on: [self-hosted, linux, x64, homelab]` + buildx `driver-opts: network=host` + `localhost:8088` push 로 CF 우회 (run `24469753702` 에서 green 확인).
    - 설치 스크립트: `system/gha_runner_install.sh` (재등록 필요 시 참고).
 
-2. **IaC repo 용 self-hosted runner 추가 등록 + IaC 디렉토리 접근 권한 부여** *(2026-04-16)*
-   - 목적: `deploy-apps.yml` 이 홈랩 호스트에서 직접 `make <app>` 을 실행하도록 전환. SSH secrets 불필요.
-   - 단계:
-     1. GitHub `GirinMan/serengeti-iac` 저장소 Settings → Actions → Runners → **New self-hosted runner** 에서 registration token 복사.
-     2. 호스트에서 두 번째 runner 를 별도 user/home 으로 등록:
-        ```bash
-        export GHA_REPO=GirinMan/serengeti-iac
-        export GHA_REG_TOKEN=<복사한 토큰>
-        export RUNNER_USER=gha-runner-iac
-        export RUNNER_HOME=/opt/gha-runner-iac
-        export RUNNER_NAME=$(hostname)-iac
-        sudo -E bash system/gha_runner_install.sh
-        ```
-     3. runner user 가 `/home/girinman/workspace/serengeti-iac` 에 읽기/쓰기 할 수 있도록 ACL 부여:
-        ```bash
-        sudo apt-get install -y acl   # 이미 설치돼 있으면 생략
-        sudo setfacl -R -m u:gha-runner-iac:rwX /home/girinman/workspace/serengeti-iac
-        sudo setfacl -dR -m u:gha-runner-iac:rwX /home/girinman/workspace/serengeti-iac
-        ```
-        (default ACL 로 새로 생성되는 파일에도 권한 자동 상속)
-   - 확인: repo 에서 workflow_dispatch 로 `deploy-apps.yml` 실행, `app=gis` 선택 → runner 가 잡아서 `make gis` 실행되면 완료.
+2. ~~**IaC repo 용 self-hosted runner 추가 등록 + IaC 디렉토리 접근 권한 부여**~~ *(해결 2026-04-16)*
+   - `gha-runner-iac` user 로 homelab 호스트에 등록 완료, `/home/girinman/workspace/serengeti-iac` 에 ACL rwX 부여, 상위 디렉토리에는 x 권한만 부여.
+   - `deploy-apps.yml` 이 `runs-on: [self-hosted, linux, x64, homelab]` 로 전환, `git fetch https://.../main` + `git reset --hard FETCH_HEAD` + `make <app>` 흐름으로 SSH 우회.
+   - 최근 실행에서 `gis` 파이프라인 `repository_dispatch` 수신 → 이미지 태그 `.env` 에 반영 → `make gis` 재기동까지 green 확인됨 (`.env` 의 `GIS_*_IMAGE_TAG=bb5757f...` 가 그 결과).
 
 3. Cloudflare Tunnel 등록
    - 필요 값:
@@ -47,6 +30,14 @@
 
 ## Runtime Notes
 
+- **2026-04-16 현재 상태**:
+  - Layer 1 (Ops): `npm`, `harbor-*` 전부 healthy ✓
+  - Layer 2 (Data): `postgres`, `neo4j`, `elasticsearch`, `redis`, `kafka`, `minio`, `rabbitmq` - 모두 healthy ✓
+  - Layer 3 (Apps):
+    - `astro-blog` → Harbor 이미지 `harbor.giraffe.ai.kr/girinman/astro-blog:7fcfcfa5...` 로 교체 완료, healthy ✓. 과거 로컬 `astro-blog:1.0.1` 컨테이너는 제거.
+    - `gis-api/gis-web/gis-worker` → Harbor 이미지 `:bb5757f3...` 로 가동, 모두 healthy ✓.
+    - `plane-*`, `nextcloud` - 기존 상태 유지, healthy ✓.
+  - Blog healthcheck: compose 내부 `wget`이 `localhost` → IPv6(::1) 먼저 시도해 실패하던 문제를 `http://127.0.0.1/` 로 변경해 해결.
 - **2026-03-22 현재 상태** (14:00 UTC):
   - Layer 2 (Data): `postgres`, `neo4j`, `elasticsearch`, `redis`, `kafka`, `minio`, `rabbitmq` - 모두 healthy ✓
   - Layer 3 (Apps):
