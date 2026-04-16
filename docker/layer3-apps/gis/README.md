@@ -32,13 +32,16 @@
 
 ## 서비스 구성
 
+앱 소스·Dockerfile 은 [`github.com/GirinMan/GIS-underground-facilities`](https://github.com/GirinMan/GIS-underground-facilities)
+리포지토리에서 관리하고, 빌드/푸시된 이미지를 이 IaC 에서 Harbor (`harbor.giraffe.ai.kr/girinman/*`) 로부터 끌어다 띄운다.
+
 | 서비스 | 이미지 | 설명 |
 |--------|--------|------|
 | `pg-tileserv` | pramsey/pg_tileserv | PostGIS → MVT 벡터 타일 서빙 |
 | `pg-featureserv` | pramsey/pg_featureserv | PostGIS → OGC API Features |
-| `gis-api` | python:3.12-slim (빌드) | FastAPI 백엔드 API |
-| `gis-worker` | postgis:16-3.4-alpine (빌드) | Kafka 데이터 수집 워커 |
-| `gis-web` | node:22-alpine → nginx:alpine | React SPA + 리버스 프록시 |
+| `gis-api` | `harbor.giraffe.ai.kr/girinman/gis-api:<sha>` | FastAPI 백엔드 API |
+| `gis-worker` | `harbor.giraffe.ai.kr/girinman/gis-worker:<sha>` | Kafka 데이터 수집 워커 |
+| `gis-web` | `harbor.giraffe.ai.kr/girinman/gis-web:<sha>` | React SPA + 리버스 프록시 |
 
 ## 사전 요구사항
 
@@ -91,7 +94,9 @@ nori 한국어 분석기 기반 주소 검색 인덱스를 생성합니다.
 make gis
 ```
 
-5개 서비스(pg-tileserv, pg-featureserv, gis-api, gis-worker, gis-web)를 빌드하고 실행합니다.
+5개 서비스(pg-tileserv, pg-featureserv, gis-api, gis-worker, gis-web)를 Harbor 에서 pull 하여 실행합니다.
+태그 고정은 `.env` 의 `GIS_API_IMAGE_TAG` / `GIS_WEB_IMAGE_TAG` / `GIS_WORKER_IMAGE_TAG` 에서 관리하며,
+app repo push 성공 시 `deploy-apps.yml` workflow 가 자동으로 교체·재기동한다.
 
 ### 전체 한 번에 실행
 
@@ -174,8 +179,11 @@ curl -X POST "https://gis.giraffe.ai.kr/api/v1/import/upload?region_code=11350&t
 
 ## 프론트엔드 로컬 개발
 
+소스는 `github.com/GirinMan/GIS-underground-facilities` 에 있다.
+
 ```bash
-cd gis-web
+git clone git@github.com:GirinMan/GIS-underground-facilities.git
+cd GIS-underground-facilities/gis-web
 npm install
 npm run dev   # http://localhost:5173
 ```
@@ -190,49 +198,19 @@ Vite dev 서버가 `/api` → `localhost:8000`, `/tiles` → `localhost:7800`으
 | [좌표 분석 요약](docs/5.coordinates/SUMMARY.md) | Loop 1~16 좌표 분석 및 GIS 앱 개선 전체 요약 |
 | [좌표 분석 이력](docs/5.coordinates/HISTORY.md) | 좌표 틀어짐 분석/수정 상세 작업 이력 |
 
-## 디렉토리 구조
+## 디렉토리 구조 (IaC 쪽만)
 
 ```
 gis/
-├── docker-compose.yml          # 5개 서비스 정의
-├── nginx-spa.conf              # nginx 리버스 프록시 + 타일 캐싱
+├── docker-compose.yml          # 5개 서비스 정의 (image: harbor/.../gis-*)
 ├── init-gisdb.sh               # DB 초기화 스크립트
 ├── migrate-legacy.sh           # 레거시 마이그레이션 오케스트레이터
 ├── initdb/                     # DB 초기화 SQL (01~05)
 ├── migration/                  # 마이그레이션 SQL + ES 인덱스 (06~10)
-├── gis-api/                    # FastAPI 백엔드
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── app/
-│       ├── main.py             # FastAPI 앱 진입점
-│       ├── config.py           # pydantic-settings 설정
-│       ├── deps.py             # JWT 인증 의존성
-│       ├── models/             # SQLAlchemy ORM (7개)
-│       ├── schemas/            # Pydantic 스키마 (6개)
-│       ├── routers/            # API 라우터 (6개)
-│       └── services/           # Redis, ES, Kafka, MinIO (4개)
-├── gis-worker/                 # Kafka 수집 워커
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── worker/
-│       ├── main.py             # Kafka consumer 메인 루프
-│       ├── config.py           # 설정
-│       └── ingest.py           # 6단계 수집 파이프라인
-└── gis-web/                    # React 프론트엔드
-    ├── Dockerfile              # 멀티스테이지 (Node → nginx)
-    ├── package.json
-    ├── vite.config.ts
-    ├── playwright.config.ts
-    ├── e2e/                    # E2E 테스트 (4개 spec)
-    └── src/
-        ├── App.tsx             # 메인 앱 (인증 가드 + 반응형)
-        ├── api/                # API 클라이언트 (7개)
-        ├── stores/             # Zustand 스토어 (3개)
-        └── components/
-            ├── map/            # MapView, LayerManager, MapControls
-            ├── search/         # SearchBar, SearchResults
-            ├── sidebar/        # RegionSelector, LayerTree, FacilityDetail
-            ├── admin/          # AdminPanel, DataUpload, ImportHistory
-            ├── auth/           # LoginForm, UserMenu
-            └── common/         # ErrorBoundary, Spinner
+├── gis-status.sh               # 상태 점검 헬퍼
+└── README.md
+```
+
+앱 코드(`gis-api/`, `gis-web/`, `gis-worker/` + 각 Dockerfile)는 별도 리포
+`github.com/GirinMan/GIS-underground-facilities` 에서 관리한다.
 ```
