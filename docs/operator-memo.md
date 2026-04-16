@@ -4,7 +4,14 @@
 
 ## Human Input Still Needed
 
-1. ~~**gis-worker CI 413 (Cloudflare 100MB cap) — Self-hosted runner 필요**~~ *(해결 2026-04-16)*
+1. **girinman-career `IAC_DISPATCH_TOKEN` 재발급** *(2026-04-16 관찰)*
+   - 증상: `build-blog.yml` 의 `Trigger IaC deploy` 단계가 `##[error]Bad credentials` 로 실패한다. Build+Harbor push 까지는 녹색.
+   - 시크릿은 `gh secret list -R GirinMan/girinman-career` 로 `IAC_DISPATCH_TOKEN` 존재 자체는 확인되지만 GitHub API 가 자격 증명 자체를 거부하는 상태.
+   - 대응: 새로 **Classic PAT (scope=`repo`)** 또는 `serengeti-iac` 리포에 대해 **Fine-grained PAT (Contents: Read+Write, Metadata: Read)** 를 발급해 `IAC_DISPATCH_TOKEN` 으로 덮어쓰기.
+   - 검증: `website/**` 을 살짝 바꿔 push → run 이 녹색 (Trigger IaC deploy 포함) → IaC 쪽 `deploy-apps.yml` 이 `repository_dispatch` 이벤트로 자동 실행되어야 한다.
+   - 참고: IaC 수신 경로는 2026-04-16 수동 `workflow_dispatch` (`tag=091b449b...`) 로 end-to-end 녹색 확인 완료.
+
+2. ~~**gis-worker CI 413 (Cloudflare 100MB cap) — Self-hosted runner 필요**~~ *(해결 2026-04-16)*
    - Self-hosted runner 가 homelab 호스트에 등록됨 (`gha-runner` user, systemd 서비스).
    - `build-gis.yml` 의 `gis-worker` job 은 `runs-on: [self-hosted, linux, x64, homelab]` + buildx `driver-opts: network=host` + `localhost:8088` push 로 CF 우회 (run `24469753702` 에서 green 확인).
    - 설치 스크립트: `system/gha_runner_install.sh` (재등록 필요 시 참고).
