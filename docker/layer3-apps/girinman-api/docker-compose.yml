@@ -1,0 +1,31 @@
+services:
+  girinman-api:
+    image: ${CF_HARBOR_HOST:?CF_HARBOR_HOST must be set}/girinman/girinman-api:${GIRINMAN_API_IMAGE_TAG:?GIRINMAN_API_IMAGE_TAG must be set (use git sha from github.com/GirinMan/girinman-career)}
+    container_name: girinman-api
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      DB_URL: postgresql+asyncpg://girinman_api:${GIRINMAN_DB_PASSWORD:?GIRINMAN_DB_PASSWORD must be set}@postgres:5432/girinman_blog
+      CORS_ORIGINS: https://${CF_BLOG_HOST:?CF_BLOG_HOST must be set}
+      IP_HASH_SECRET: ${GIRINMAN_IP_HASH_SECRET:?GIRINMAN_IP_HASH_SECRET must be set}
+      RATE_LIMIT_POST: ${GIRINMAN_RATE_LIMIT_POST:-5/minute}
+      RATE_LIMIT_COMMENT: ${GIRINMAN_RATE_LIMIT_COMMENT:-30/minute}
+    networks:
+      - data-tier
+      - proxy-tier
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  data-tier:
+    external: true
+  proxy-tier:
+    external: true

@@ -5,7 +5,7 @@ COMPOSE = docker compose --env-file .env
 PRIMARY_STORAGE_ROOT ?= /mnt/primary
 ARCHIVE_STORAGE_ROOT ?= /mnt/archive
 
-.PHONY: help check-env validate preflight storage-map runtime-snapshot system storage ssh ufw cloudflared network dirs ops npm harbor harbor-login data apps blog gis gis-init gis-migrate gis-status backup bootstrap app status logs docs-host clean
+.PHONY: help check-env validate preflight storage-map runtime-snapshot system storage ssh ufw cloudflared network dirs ops npm harbor harbor-login data apps blog girinman-api gis gis-init gis-migrate gis-status backup bootstrap app status logs docs-host clean
 
 help:
 	@echo "===== Serengeti Homelab IaC ====="
@@ -31,9 +31,10 @@ help:
 	@echo "make gis-migrate - 레거시 Shapefile → PostGIS 마이그레이션"
 	@echo "make gis         - Layer 3 GIS 서비스 실행 (Harbor pull)"
 	@echo "make blog        - Layer 3 Blog 실행 (Harbor pull)"
+	@echo "make girinman-api - Layer 3 Girinman API (blog 방명록 백엔드) 실행 (Harbor pull)"
 	@echo "make gis-status  - GIS 서비스 상태 점검"
 	@echo "make harbor-login - Harbor registry 로그인 (push/pull 전 필요)"
-	@echo "make app name=<blog|nextcloud|plane|gis> - 개별 앱 재배포"
+	@echo "make app name=<blog|girinman-api|nextcloud|plane|gis> - 개별 앱 재배포"
 	@echo "make docs-host   - 현재 호스트 상태 수집 문서 생성"
 	@echo "make status      - 전체 상태 확인"
 	@echo "make logs name=<container> - 컨테이너 로그 확인"
@@ -76,6 +77,7 @@ validate: check-env
 		$(COMPOSE) -f docker/layer2-data/minio/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer2-data/rabbitmq/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml config >/dev/null; \
+		$(COMPOSE) -f docker/layer3-apps/girinman-api/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer3-apps/plane/docker-compose.yml config >/dev/null; \
 		$(COMPOSE) -f docker/layer3-apps/backup/docker-compose.yml config >/dev/null; \
@@ -180,6 +182,14 @@ apps: check-env network dirs harbor-login
 	@echo "==> [Layer 3] 애플리케이션 실행"
 	$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml pull
 	$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d
+	@docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -tc "SELECT 1 FROM pg_roles WHERE rolname='girinman_api'" | grep -q 1 || { \
+		echo "girinman_api role/db 가 없어 girinman-api 기동을 건너뜁니다. docker/layer3-apps/girinman-api/README.md §사전 준비 참고."; \
+		SKIP_GIRINMAN_API=1; \
+	}; \
+	if [ -z "$${SKIP_GIRINMAN_API:-}" ]; then \
+		$(COMPOSE) -f docker/layer3-apps/girinman-api/docker-compose.yml pull; \
+		$(COMPOSE) -f docker/layer3-apps/girinman-api/docker-compose.yml up -d; \
+	fi
 	docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='$(PLANE_DB_NAME)'" | grep -q 1 || \
 		docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -c "CREATE DATABASE $(PLANE_DB_NAME);"
 	$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml up -d
@@ -189,6 +199,15 @@ blog: check-env network harbor-login
 	@echo "==> [Layer 3] Blog 서비스 실행 (Harbor pull)"
 	$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml pull
 	$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d
+
+girinman-api: check-env network harbor-login
+	@echo "==> [Layer 3] Girinman API 서비스 실행 (Harbor pull)"
+	@docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -tc "SELECT 1 FROM pg_roles WHERE rolname='girinman_api'" | grep -q 1 || { \
+		echo "ERROR: girinman_api role 이 없습니다. docker/layer3-apps/girinman-api/README.md §사전 준비 1 의 SQL 을 먼저 실행하세요."; \
+		exit 1; \
+	}
+	$(COMPOSE) -f docker/layer3-apps/girinman-api/docker-compose.yml pull
+	$(COMPOSE) -f docker/layer3-apps/girinman-api/docker-compose.yml up -d
 
 gis-init: check-env
 	@echo "==> [Layer 3] GIS DB 초기화"
@@ -216,12 +235,19 @@ bootstrap: ops data apps backup
 
 app: check-env
 	@if [ -z "$(name)" ]; then \
-		echo "사용법: make app name=<blog|nextcloud|plane|gis>"; \
+		echo "사용법: make app name=<blog|girinman-api|nextcloud|plane|gis>"; \
 		exit 1; \
 	fi
 	@if [ "$(name)" = "blog" ]; then \
 		$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml pull; \
 		$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml up -d --force-recreate; \
+	elif [ "$(name)" = "girinman-api" ]; then \
+		docker exec -i postgres psql -U "$(POSTGRES_USER)" -d postgres -tc "SELECT 1 FROM pg_roles WHERE rolname='girinman_api'" | grep -q 1 || { \
+			echo "ERROR: girinman_api role 이 없습니다. docker/layer3-apps/girinman-api/README.md §사전 준비 1 의 SQL 을 먼저 실행하세요."; \
+			exit 1; \
+		}; \
+		$(COMPOSE) -f docker/layer3-apps/girinman-api/docker-compose.yml pull; \
+		$(COMPOSE) -f docker/layer3-apps/girinman-api/docker-compose.yml up -d --force-recreate; \
 	elif [ "$(name)" = "nextcloud" ]; then \
 		$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml up -d --force-recreate; \
 	elif [ "$(name)" = "plane" ]; then \
@@ -264,6 +290,7 @@ clean:
 	-$(COMPOSE) -f docker/layer3-apps/gis/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer3-apps/plane/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer3-apps/nextcloud/docker-compose.yml down --remove-orphans
+	-$(COMPOSE) -f docker/layer3-apps/girinman-api/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer3-apps/blog/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/rabbitmq/docker-compose.yml down --remove-orphans
 	-$(COMPOSE) -f docker/layer2-data/minio/docker-compose.yml down --remove-orphans

@@ -10,7 +10,7 @@ name: Deploy Apps
 
 on:
   repository_dispatch:
-    types: [deploy-blog, deploy-gis]
+    types: [deploy-blog, deploy-girinman-api, deploy-gis]
   workflow_dispatch:
     inputs:
       app:
@@ -19,6 +19,7 @@ on:
         type: choice
         options:
           - blog
+          - girinman-api
           - gis
           - apps
       tag:
@@ -39,8 +40,9 @@ jobs:
           set -euo pipefail
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
             case "${{ github.event.action }}" in
-              deploy-blog) APP=blog ;;
-              deploy-gis)  APP=gis  ;;
+              deploy-blog)         APP=blog         ;;
+              deploy-girinman-api) APP=girinman-api ;;
+              deploy-gis)          APP=gis          ;;
               *) echo "unknown action ${{ github.event.action }}"; exit 1 ;;
             esac
             TAG="${{ github.event.client_payload.tag }}"
@@ -71,22 +73,43 @@ jobs:
           git fetch --quiet https://github.com/${{ github.repository }}.git main
           git reset --quiet --hard FETCH_HEAD
 
+          # Upsert a KEY=VALUE line in .env: replace existing or append if missing.
+          # Removes the chicken-and-egg for first-ever deploy of a new app — the
+          # operator no longer has to pre-seed .env with placeholder tag lines.
+          upsert_env() {
+            local key="$1" value="$2"
+            if [ -f .env ] && grep -qE "^${key}=" .env; then
+              sed -i "s|^${key}=.*|${key}=${value}|" .env
+            else
+              # Ensure trailing newline before appending (only if file is
+              # non-empty and doesn't already end in a newline).
+              if [ -s .env ] && [ -n "$(tail -c1 .env)" ]; then
+                echo "" >> .env
+              fi
+              echo "${key}=${value}" >> .env
+            fi
+          }
+
           if [ -n "${TAG:-}" ]; then
             case "$APP" in
               blog)
-                sed -i "s|^BLOG_IMAGE_TAG=.*|BLOG_IMAGE_TAG=${TAG}|" .env
+                upsert_env BLOG_IMAGE_TAG "$TAG"
+                ;;
+              girinman-api)
+                upsert_env GIRINMAN_API_IMAGE_TAG "$TAG"
                 ;;
               gis)
-                sed -i "s|^GIS_API_IMAGE_TAG=.*|GIS_API_IMAGE_TAG=${TAG}|" .env
-                sed -i "s|^GIS_WEB_IMAGE_TAG=.*|GIS_WEB_IMAGE_TAG=${TAG}|" .env
-                sed -i "s|^GIS_WORKER_IMAGE_TAG=.*|GIS_WORKER_IMAGE_TAG=${TAG}|" .env
+                upsert_env GIS_API_IMAGE_TAG    "$TAG"
+                upsert_env GIS_WEB_IMAGE_TAG    "$TAG"
+                upsert_env GIS_WORKER_IMAGE_TAG "$TAG"
                 ;;
             esac
           fi
 
           case "$APP" in
-            blog) make blog ;;
-            gis)  make gis ;;
-            apps) make apps ;;
+            blog)         make blog ;;
+            girinman-api) make girinman-api ;;
+            gis)          make gis ;;
+            apps)         make apps ;;
             *) echo "unknown app: $APP"; exit 1 ;;
           esac
