@@ -10,7 +10,7 @@ name: Deploy Apps
 
 on:
   repository_dispatch:
-    types: [deploy-blog, deploy-gis]
+    types: [deploy-blog, deploy-girinman-api, deploy-gis]
   workflow_dispatch:
     inputs:
       app:
@@ -19,6 +19,7 @@ on:
         type: choice
         options:
           - blog
+          - girinman-api
           - gis
           - apps
       tag:
@@ -39,8 +40,9 @@ jobs:
           set -euo pipefail
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
             case "${{ github.event.action }}" in
-              deploy-blog) APP=blog ;;
-              deploy-gis)  APP=gis  ;;
+              deploy-blog)         APP=blog         ;;
+              deploy-girinman-api) APP=girinman-api ;;
+              deploy-gis)          APP=gis          ;;
               *) echo "unknown action ${{ github.event.action }}"; exit 1 ;;
             esac
             TAG="${{ github.event.client_payload.tag }}"
@@ -76,6 +78,9 @@ jobs:
               blog)
                 sed -i "s|^BLOG_IMAGE_TAG=.*|BLOG_IMAGE_TAG=${TAG}|" .env
                 ;;
+              girinman-api)
+                sed -i "s|^GIRINMAN_API_IMAGE_TAG=.*|GIRINMAN_API_IMAGE_TAG=${TAG}|" .env
+                ;;
               gis)
                 sed -i "s|^GIS_API_IMAGE_TAG=.*|GIS_API_IMAGE_TAG=${TAG}|" .env
                 sed -i "s|^GIS_WEB_IMAGE_TAG=.*|GIS_WEB_IMAGE_TAG=${TAG}|" .env
@@ -85,8 +90,9 @@ jobs:
           fi
 
           case "$APP" in
-            blog) make blog ;;
-            gis)  make gis ;;
-            apps) make apps ;;
+            blog)         make blog ;;
+            girinman-api) make girinman-api ;;
+            gis)          make gis ;;
+            apps)         make apps ;;
             *) echo "unknown app: $APP"; exit 1 ;;
           esac
