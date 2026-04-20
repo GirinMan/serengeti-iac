@@ -51,7 +51,6 @@ BREW_PACKAGES=(
     jq
     starship
     uv
-    bun
     awscli
     cloudflared
     nvm
@@ -67,6 +66,15 @@ for pkg in "${BREW_PACKAGES[@]}"; do
     fi
 done
 
+# bun 은 oven-sh/bun tap 에 있다 (공식 Homebrew 에는 없음).
+if ! command -v bun >/dev/null 2>&1; then
+    echo "  + installing bun (via oven-sh/bun tap)"
+    brew tap oven-sh/bun 2>/dev/null || true
+    brew install oven-sh/bun/bun
+else
+    echo "  ✓ bun"
+fi
+
 # Powerline 폰트 (tmux / starship 에서 글리프 깨짐 방지)
 if ! brew list --cask font-meslo-lg-nerd-font >/dev/null 2>&1; then
     brew tap homebrew/cask-fonts 2>/dev/null || true
@@ -74,14 +82,21 @@ if ! brew list --cask font-meslo-lg-nerd-font >/dev/null 2>&1; then
 fi
 
 # ---- 3. zsh 기본 쉘 --------------------------------------------------------
+# 이미 /bin/zsh 등 시스템 zsh 를 쓰고 있으면 굳이 brew zsh 로 바꾸지 않는다
+# (sudo 가 필요해서 비대화형 환경에서 실패할 수 있음).
 ZSH_BIN="$(command -v zsh)"
-if ! grep -qx "$ZSH_BIN" /etc/shells 2>/dev/null; then
-    echo "▶ $ZSH_BIN 를 /etc/shells 에 등록 (sudo 필요)"
-    echo "$ZSH_BIN" | sudo tee -a /etc/shells >/dev/null
-fi
-if [ "$SHELL" != "$ZSH_BIN" ]; then
+if [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "$ZSH_BIN" ]; then
+    echo "✓ 기본 쉘이 이미 zsh ($SHELL)"
+else
+    if ! grep -qx "$ZSH_BIN" /etc/shells 2>/dev/null; then
+        echo "▶ $ZSH_BIN 를 /etc/shells 에 등록 (sudo 필요)"
+        if ! echo "$ZSH_BIN" | sudo -n tee -a /etc/shells >/dev/null 2>&1; then
+            echo "⚠ sudo 비대화형 실패 — 수동으로 실행해 주세요:"
+            echo "    echo \"$ZSH_BIN\" | sudo tee -a /etc/shells"
+        fi
+    fi
     echo "▶ 기본 쉘을 zsh 로 변경"
-    chsh -s "$ZSH_BIN" || true
+    chsh -s "$ZSH_BIN" || echo "⚠ chsh 실패 (수동 실행: chsh -s $ZSH_BIN)"
 fi
 
 # ---- 4. oh-my-zsh ----------------------------------------------------------
