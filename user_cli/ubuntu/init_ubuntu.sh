@@ -42,13 +42,16 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_CUSTOM/
 curl -sS https://starship.rs/install.sh | sh -s -- -y
 
 # 9. Copy User Configs (zshrc, tmux)
-# zshrc/ubuntu 파일이 현재 디렉토리에 있다고 가정
-if [ -f ".zshrc" ]; then
-    cp -rf .zshrc ~/.zshrc
+# 이 스크립트는 user_cli/ubuntu/ 아래에 위치, .tmux.conf.local 은 user_cli/ 공용.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+USER_CLI_DIR="$(dirname "$SCRIPT_DIR")"
+
+if [ -f "$SCRIPT_DIR/.zshrc" ]; then
+    cp -rf "$SCRIPT_DIR/.zshrc" ~/.zshrc
 fi
 
-if [ -f ".tmux.conf.local" ]; then
-    cp -rf .tmux.conf.local ~/.tmux.conf.local
+if [ -f "$USER_CLI_DIR/.tmux.conf.local" ]; then
+    cp -rf "$USER_CLI_DIR/.tmux.conf.local" ~/.tmux.conf.local
 fi
 
 # 10. Tmux Setup (gpakosz)
