@@ -30,6 +30,15 @@ Ubuntu 24.04 LTS 기반 홈랩 인프라를 코드와 문서로 관리하기 위
 - 민감 정보는 `.env` 등으로 분리하고, Git에는 남기지 않는다.
 - 운영자 개인 Ubuntu CLI 환경까지 같은 저장소 안에서 정리한다.
 
+## 사람이 이 저장소를 읽는 순서
+
+처음 보는 사람이면 아래 순서로 읽는 것이 가장 효율적입니다.
+
+1. 이 `README.md`를 읽고 프로젝트의 큰 그림을 파악합니다.
+2. [AGENTS.md](/home/girinman/workspace/serengeti-iac/AGENTS.md)를 읽고 상세 설계를 확인합니다.
+3. 실제 구현 파일인 `system/`, `docker/`, `Makefile`, `.env.example`을 확인합니다.
+4. 운영자 로컬 환경이 필요하면 `user_cli/`를 사용합니다.
+
 ---
 
 ## 왜 이 저장소가 필요한가
@@ -51,7 +60,6 @@ Ubuntu 24.04 LTS 기반 홈랩 인프라를 코드와 문서로 관리하기 위
 |---|---|
 | 운영체제 | Ubuntu Server 24.04 LTS |
 | 서버 IP | `<server_private_ip>` |
-| 설치 위치 | 우영하우스 403호 |
 | 도메인 | `<public_domain>` |
 | 외부 노출 방식 | Cloudflare Tunnel |
 | 핵심 철학 | 인바운드 포트 직접 개방 없이 서비스 공개 |
@@ -403,17 +411,6 @@ make docs-host
 
 ---
 
-## 사람이 이 저장소를 읽는 순서
-
-처음 보는 사람이면 아래 순서로 읽는 것이 가장 효율적입니다.
-
-1. 이 `README.md`를 읽고 프로젝트의 큰 그림을 파악합니다.
-2. [AGENTS.md](/home/girinman/workspace/serengeti-iac/AGENTS.md)를 읽고 상세 설계를 확인합니다.
-3. 실제 구현 파일인 `system/`, `docker/`, `Makefile`, `.env.example`을 확인합니다.
-4. 운영자 로컬 환경이 필요하면 `user_cli/`를 사용합니다.
-
----
-
 ## 이 프로젝트의 운영 원칙
 
 - 민감 정보는 절대 Git에 직접 커밋하지 않습니다.
@@ -421,18 +418,6 @@ make docs-host
 - 데이터는 접근 패턴에 따라 스토리지를 분리합니다.
 - 문서가 코드보다 먼저 방향을 잡고, 코드는 그 문서를 따라갑니다.
 - 로컬 개발 환경과 서버 프로비저닝은 분리해 관리합니다.
-
----
-
-## 앞으로 채워질 구현 항목
-
-현재 기준으로 보면, 다음이 구현 우선순위가 됩니다.
-
-1. `.env` 실값 작성 및 호스트별 값 확정
-2. Ubuntu 서버에서 Layer 0 스크립트 실제 실행 검증
-3. Docker 데이터 서비스와 애플리케이션의 실제 기동 검증
-4. Nginx Proxy Manager 및 Cloudflare Tunnel 연동 검증
-5. 백업 파이프라인 및 복구 절차 실전 테스트
 
 ---
 
